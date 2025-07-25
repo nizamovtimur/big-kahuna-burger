@@ -1,206 +1,161 @@
 <template>
   <div class="candidate-portal">
-    <div class="container-fluid h-100">
-      <div class="row h-100">
-        <!-- Job Listings Sidebar -->
-        <div class="col-lg-4 bg-light border-end">
-          <div class="p-4">
-            <h4 class="mb-4">
-              <i class="fas fa-briefcase me-2"></i>Available Jobs
-            </h4>
-            
-            <!-- Job Filters -->
-            <div class="mb-4">
-              <div class="row g-2">
-                <div class="col">
-                  <input 
-                    v-model="filters.department" 
-                    type="text" 
-                    class="form-control form-control-sm" 
-                    placeholder="Department"
-                    @input="filterJobs"
-                  >
-                </div>
-                <div class="col">
-                  <input 
-                    v-model="filters.location" 
-                    type="text" 
-                    class="form-control form-control-sm" 
-                    placeholder="Location"
-                    @input="filterJobs"
-                  >
-                </div>
-              </div>
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Chat Section -->
+        <div class="col-lg-8">
+          <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">
+                <i class="fas fa-robot"></i> Chat with Big Kahuna AI Assistant
+              </h5>
             </div>
-
-            <!-- Job List -->
-            <div class="job-list" style="max-height: 60vh; overflow-y: auto;">
-              <div 
-                v-for="job in filteredJobList" 
-                :key="job.id"
-                class="card mb-3 job-card"
-                :class="{ 'border-primary': selectedJob?.id === job.id }"
-                @click="selectJob(job)"
-                style="cursor: pointer;"
-              >
-                <div class="card-body p-3">
-                  <h6 class="card-title mb-1">{{ job.title }}</h6>
-                  <small class="text-muted d-block">{{ job.department }}</small>
-                  <small class="text-muted d-block">
-                    <i class="fas fa-map-marker-alt me-1"></i>{{ job.location }}
-                  </small>
-                  <div class="mt-2" v-if="job.salary_min && job.salary_max">
-                    <small class="badge bg-success">
-                      ${{ job.salary_min.toLocaleString() }} - ${{ job.salary_max.toLocaleString() }}
-                    </small>
+            
+            <!-- Chat Messages -->
+            <div class="card-body p-0">
+              <div class="chat-container" ref="chatContainer">
+                <div 
+                  v-for="message in chatHistory" 
+                  :key="message.id || Math.random()"
+                  class="message-wrapper"
+                >
+                  <!-- User Message -->
+                  <div class="message user-message">
+                    <div class="message-content">
+                      <div class="message-header">
+                        <strong>You</strong>
+                        <small class="text-muted">{{ formatTime(message.created_at) }}</small>
+                      </div>
+                      <div class="message-text" v-html="message.user_message"></div>
+                    </div>
+                  </div>
+                  
+                  <!-- AI Response -->
+                  <div class="message ai-message">
+                    <div class="message-content">
+                      <div class="message-header">
+                        <strong><i class="fas fa-robot"></i> Big Kahuna AI</strong>
+                        <small class="text-muted">{{ formatTime(message.created_at) }}</small>
+                      </div>
+                      <div class="message-text" v-html="message.ai_response"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Loading indicator -->
+                <div v-if="sendingMessage" class="message ai-message">
+                  <div class="message-content">
+                    <div class="message-header">
+                      <strong><i class="fas fa-robot"></i> Big Kahuna AI</strong>
+                    </div>
+                    <div class="typing-indicator">
+                      <span></span><span></span><span></span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+            
+            <!-- Message Input -->
+            <div class="card-footer">
+              <form @submit.prevent="sendMessage">
+                <div class="input-group">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    v-model="currentMessage"
+                    placeholder="Ask me about job openings, company culture, benefits..."
+                    :disabled="sendingMessage"
+                  >
+                  <button 
+                    type="submit" 
+                    class="btn btn-primary"
+                    :disabled="!currentMessage.trim() || sendingMessage"
+                  >
+                    <i class="fas fa-paper-plane"></i>
+                  </button>
+                </div>
+                
+
+              </form>
+            </div>
           </div>
         </div>
-
-        <!-- Chat Interface -->
-        <div class="col-lg-8 d-flex flex-column">
-          <div class="p-4 border-bottom bg-white">
-            <h4 class="mb-2">
-              <i class="fas fa-robot me-2 text-primary"></i>AI Career Assistant
-            </h4>
-            <p class="text-muted mb-0">
-              Ask me anything about our job openings, company culture, or application process!
-            </p>
-            <div v-if="selectedJob" class="mt-2">
-              <small class="badge bg-primary">
-                Discussing: {{ selectedJob.title }}
-              </small>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+          <!-- Job Context -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header">
+              <h6 class="mb-0">Job Context</h6>
+            </div>
+            <div class="card-body">
+              <div v-if="selectedJob">
+                <h6>{{ selectedJob.title }}</h6>
+                <p class="small text-muted">{{ selectedJob.location }}</p>
+                <button 
+                  class="btn btn-outline-secondary btn-sm"
+                  @click="clearJobContext"
+                >
+                  Clear Context
+                </button>
+              </div>
+              <div v-else>
+                <p class="text-muted small">No job selected. Chat about general topics.</p>
+                <router-link to="/jobs" class="btn btn-primary btn-sm">
+                  Browse Jobs
+                </router-link>
+              </div>
             </div>
           </div>
-
-          <!-- Chat Messages -->
-          <div class="flex-grow-1 p-4 chat-container" style="overflow-y: auto; max-height: 50vh;">
-            <div v-if="chatMessages.length === 0" class="text-center text-muted py-5">
-              <i class="fas fa-comments fa-3x mb-3"></i>
-              <p>Start a conversation! Ask me about jobs, benefits, or anything else.</p>
+          
+          <!-- My Applications -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header">
+              <h6 class="mb-0">My Applications</h6>
             </div>
-            
-            <div v-for="(message, index) in chatMessages" :key="index" class="mb-3">
-              <div 
-                class="d-flex"
-                :class="message.role === 'user' ? 'justify-content-end' : 'justify-content-start'"
-              >
+            <div class="card-body">
+              <div v-if="applications.length > 0">
                 <div 
-                  class="message p-3 rounded"
-                  :class="message.role === 'user' ? 'bg-primary text-white user-message' : 'bg-light assistant-message'"
-                  style="max-width: 70%;"
+                  v-for="app in applications" 
+                  :key="app.id"
+                  class="border-bottom pb-2 mb-2 last:border-0"
                 >
-                  {{ message.content }}
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 class="small mb-1">Application #{{ app.id }}</h6>
+                      <p class="small text-muted mb-1">Job ID: {{ app.job_id }}</p>
+                      <span class="badge badge-sm" :class="getStatusBadgeClass(app.status)">
+                        {{ app.status }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div v-if="isTyping" class="d-flex justify-content-start mb-3">
-              <div class="bg-light p-3 rounded">
-                <div class="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
+              <div v-else class="text-muted small">
+                No applications yet.
               </div>
             </div>
           </div>
-
-          <!-- Chat Input -->
-          <div class="p-4 border-top bg-white">
-            <form @submit.prevent="sendMessage">
-              <div class="input-group">
-                <input 
-                  v-model="newMessage" 
-                  type="text" 
-                  class="form-control" 
-                  placeholder="Type your message..." 
-                  :disabled="isTyping"
-                >
-                <button 
-                  class="btn btn-primary" 
-                  type="submit" 
-                  :disabled="!newMessage.trim() || isTyping"
-                >
-                  <i class="fas fa-paper-plane"></i>
-                </button>
-              </div>
-            </form>
-            
-            <!-- Quick Actions -->
-            <div class="mt-3">
-              <small class="text-muted d-block mb-2">Quick questions:</small>
-              <div class="d-flex flex-wrap gap-2">
-                <button 
-                  class="btn btn-outline-secondary btn-sm" 
-                  @click="sendQuickMessage('Tell me about company benefits')"
-                  :disabled="isTyping"
-                >
-                  Benefits
-                </button>
-                <button 
-                  class="btn btn-outline-secondary btn-sm" 
-                  @click="sendQuickMessage('What is the application process?')"
-                  :disabled="isTyping"
-                >
-                  Application Process
-                </button>
-                <button 
-                  class="btn btn-outline-secondary btn-sm" 
-                  @click="sendQuickMessage('Tell me about company culture')"
-                  :disabled="isTyping"
-                >
-                  Company Culture
-                </button>
-              </div>
+          
+          <!-- Chat Help -->
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-info text-white">
+              <h6 class="mb-0">
+                <i class="fas fa-question-circle"></i> Need Help?
+              </h6>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Application Modal -->
-    <div class="modal fade" id="applicationModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Apply for {{ selectedJob?.title }}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <form @submit.prevent="submitApplication">
-              <div class="mb-3">
-                <label class="form-label">Full Name</label>
-                <input v-model="applicationForm.fullName" type="text" class="form-control" required>
-              </div>
-              
-              <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input v-model="applicationForm.email" type="email" class="form-control" required>
-              </div>
-              
-              <div class="mb-3">
-                <label class="form-label">Phone</label>
-                <input v-model="applicationForm.phone" type="tel" class="form-control">
-              </div>
-              
-              <div class="mb-3">
-                <label class="form-label">Cover Letter</label>
-                <textarea v-model="applicationForm.coverLetter" class="form-control" rows="4"></textarea>
-              </div>
-              
-              <div class="mb-3">
-                <label class="form-label">Resume (paste text)</label>
-                <textarea v-model="applicationForm.resume" class="form-control" rows="6" placeholder="Paste your resume text here..."></textarea>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" @click="submitApplication">Submit Application</button>
+            <div class="card-body">
+              <p class="small">
+                Our AI assistant can help you with:
+              </p>
+              <ul class="small mb-0">
+                <li>Job descriptions and requirements</li>
+                <li>Company culture and benefits</li>
+                <li>Application process questions</li>
+                <li>Career development opportunities</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -209,132 +164,94 @@
 </template>
 
 <script>
-import { mapActions, mapGetters, mapState } from 'vuex'
+import { mapActions, mapGetters } from 'vuex'
 
 export default {
   name: 'CandidatePortal',
   data() {
     return {
-      newMessage: '',
-      isTyping: false,
+      currentMessage: '',
+      sendingMessage: false,
       selectedJob: null,
-      filters: {
-        department: '',
-        location: ''
-      },
-      filteredJobList: [],
-      applicationForm: {
-        fullName: '',
-        email: '',
-        phone: '',
-        coverLetter: '',
-        resume: ''
-      }
+      showVulnerabilityDetails: false,
+      vulnerabilityInfo: `Vulnerabilities Present:
+1. Direct prompt injection in user messages
+2. XSS via unescaped HTML in chat display  
+3. No rate limiting on AI requests
+4. System prompt can be overridden
+5. Sensitive context leaked in responses`
     }
   },
   computed: {
-    ...mapGetters(['allJobs']),
-    ...mapState(['chatMessages'])
+    ...mapGetters(['chatHistory', 'applications'])
   },
   methods: {
-    ...mapActions(['fetchJobs', 'chatWithAI', 'createApplicant', 'submitApplication']),
+    ...mapActions(['sendChatMessage', 'fetchChatHistory', 'fetchApplications']),
     
     async sendMessage() {
-      if (!this.newMessage.trim()) return
-      
-      const message = this.newMessage.trim()
-      this.newMessage = ''
-      this.isTyping = true
+      if (!this.currentMessage.trim()) return
       
       try {
-        await this.chatWithAI({
-          message,
-          jobId: this.selectedJob?.id,
-          applicantEmail: this.applicationForm.email || null
+        this.sendingMessage = true
+        
+        await this.sendChatMessage({
+          message: this.currentMessage,
+          job_id: this.selectedJob?.id || null
         })
-      } catch (error) {
-        console.error('Chat error:', error)
-      } finally {
-        this.isTyping = false
+        
+        this.currentMessage = ''
         this.scrollToBottom()
+      } catch (error) {
+        alert('Failed to send message: ' + error.message)
+      } finally {
+        this.sendingMessage = false
       }
     },
     
-    sendQuickMessage(message) {
-      this.newMessage = message
-      this.sendMessage()
+    useExamplePrompt(prompt) {
+      this.currentMessage = prompt
     },
     
-    selectJob(job) {
-      this.selectedJob = job
+    clearJobContext() {
+      this.selectedJob = null
     },
     
-    filterJobs() {
-      this.filteredJobList = this.allJobs.filter(job => {
-        const departmentMatch = !this.filters.department || 
-          job.department.toLowerCase().includes(this.filters.department.toLowerCase())
-        const locationMatch = !this.filters.location || 
-          job.location.toLowerCase().includes(this.filters.location.toLowerCase())
-        return departmentMatch && locationMatch
-      })
+    getStatusBadgeClass(status) {
+      switch (status) {
+        case 'approved': return 'bg-success'
+        case 'rejected': return 'bg-danger'
+        case 'pending': return 'bg-warning'
+        default: return 'bg-secondary'
+      }
+    },
+    
+    formatTime(dateString) {
+      return new Date(dateString).toLocaleTimeString()
     },
     
     scrollToBottom() {
       this.$nextTick(() => {
-        const chatContainer = document.querySelector('.chat-container')
-        if (chatContainer) {
-          chatContainer.scrollTop = chatContainer.scrollHeight
+        const container = this.$refs.chatContainer
+        if (container) {
+          container.scrollTop = container.scrollHeight
         }
       })
-    },
-    
-    async submitApplication() {
-      // Create applicant profile first
-      const applicantResult = await this.createApplicant({
-        email: this.applicationForm.email,
-        full_name: this.applicationForm.fullName,
-        phone: this.applicationForm.phone,
-        resume_text: this.applicationForm.resume
-      })
-      
-      if (applicantResult.success && this.selectedJob) {
-        // Submit application
-        const applicationResult = await this.submitApplication({
-          applicantId: applicantResult.applicant.id,
-          applicationData: {
-            job_id: this.selectedJob.id,
-            cover_letter: this.applicationForm.coverLetter
-          }
-        })
-        
-        if (applicationResult.success) {
-          alert('Application submitted successfully!')
-          // Close modal
-          const modal = document.getElementById('applicationModal')
-          const bsModal = new bootstrap.Modal(modal)
-          bsModal.hide()
-          
-          // Reset form
-          this.applicationForm = {
-            fullName: '',
-            email: '',
-            phone: '',
-            coverLetter: '',
-            resume: ''
-          }
-        }
-      }
     }
   },
   
   async mounted() {
-    await this.fetchJobs()
-    this.filterJobs()
-  },
-  
-  watch: {
-    chatMessages() {
-      this.scrollToBottom()
+    await this.fetchChatHistory()
+    await this.fetchApplications()
+    this.scrollToBottom()
+    
+    // Check for job context from query params
+    const jobId = this.$route.query.job
+    if (jobId) {
+      try {
+        this.selectedJob = await this.$store.dispatch('fetchJobById', jobId)
+      } catch (error) {
+        console.error('Failed to load job context:', error)
+      }
     }
   }
 }
@@ -342,23 +259,61 @@ export default {
 
 <style scoped>
 .candidate-portal {
-  height: calc(100vh - 76px); /* Account for navbar */
-}
-
-.job-card:hover {
   background-color: #f8f9fa;
+  min-height: 100vh;
+  padding: 20px 0;
 }
 
-.user-message {
-  background-color: #007bff !important;
+.chat-container {
+  height: 500px;
+  overflow-y: auto;
+  padding: 20px;
+  background-color: #fafafa;
 }
 
-.assistant-message {
-  background-color: #f8f9fa;
+.message-wrapper {
+  margin-bottom: 20px;
+}
+
+.message {
+  margin-bottom: 10px;
+}
+
+.message-content {
+  max-width: 80%;
+  padding: 10px 15px;
+  border-radius: 18px;
+  position: relative;
+}
+
+.user-message .message-content {
+  background-color: #007bff;
+  color: white;
+  margin-left: auto;
+  text-align: right;
+}
+
+.ai-message .message-content {
+  background-color: white;
+  border: 1px solid #dee2e6;
+  color: #333;
+}
+
+.message-header {
+  font-size: 0.8em;
+  margin-bottom: 5px;
+  opacity: 0.8;
+}
+
+/* WARNING: Styles that enable XSS */
+.message-text {
+  /* Raw HTML rendering - XSS vulnerability */
+  word-wrap: break-word;
 }
 
 .typing-indicator {
   display: flex;
+  align-items: center;
   gap: 4px;
 }
 
@@ -367,29 +322,35 @@ export default {
   width: 8px;
   background-color: #999;
   border-radius: 50%;
-  animation: typing 1.4s infinite ease-in-out;
-}
-
-.typing-indicator span:nth-child(1) {
-  animation-delay: -0.32s;
+  animation: typing 1.4s infinite;
 }
 
 .typing-indicator span:nth-child(2) {
-  animation-delay: -0.16s;
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
 }
 
 @keyframes typing {
-  0%, 80%, 100% {
-    transform: scale(0);
+  0%, 60%, 100% {
+    transform: translateY(0);
     opacity: 0.5;
   }
-  40% {
-    transform: scale(1);
+  30% {
+    transform: translateY(-10px);
     opacity: 1;
   }
 }
 
-.chat-container {
-  background-color: #fafafa;
+.badge-sm {
+  font-size: 0.75em;
+  padding: 0.25em 0.5em;
+}
+
+pre {
+  font-size: 0.8em;
+  white-space: pre-wrap;
 }
 </style> 

@@ -1,239 +1,168 @@
+import openai
 import re
-from typing import List, Dict, Optional
-from openai import OpenAI
-from ..config import get_openai_config
+from typing import Optional, Dict, Any
+from ..config import settings
+import PyPDF2
+import io
 
-# Initialize OpenAI client with configurable settings
-openai_config = get_openai_config()
-client = OpenAI(
-    api_key=openai_config["api_key"],
-    base_url=openai_config["base_url"],
-    timeout=openai_config["timeout"],
-    max_retries=openai_config["max_retries"]
-)
-
+# Configure OpenAI client with settings
+openai.api_key = settings.openai_api_key
+openai.base_url = settings.openai_base_url
 
 class OpenAIService:
-    @staticmethod
-    def analyze_resume_match(resume_text: str, job_description: str, job_requirements: str) -> Dict:
-        """Analyze how well a resume matches a job posting"""
-        prompt = f"""
-        Analyze how well this resume matches the job posting. Provide a detailed analysis and a score from 0-100.
-
-        JOB POSTING:
-        Description: {job_description}
-        Requirements: {job_requirements}
-
-        RESUME:
-        {resume_text}
-
-        Please provide:
-        1. A match score (0-100)
-        2. Key strengths that align with the job
-        3. Areas where the candidate might need development
-        4. Overall recommendation (Strong Match, Good Match, Partial Match, Poor Match)
-
-        Format your response as follows:
-        Score: [number]
-        Strengths: [list of strengths]
-        Areas for Development: [areas needing improvement]
-        Recommendation: [your recommendation]
-        Summary: [brief overall summary]
+    def __init__(self):
+        self.client = openai.AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url
+        )
+        self.model = settings.openai_model
+    
+    async def chat_with_ai(self, user_message: str, job_context: Optional[Dict[str, Any]] = None) -> str:
         """
+        WARNING: This function is intentionally vulnerable to prompt injection attacks!
+        User input is directly concatenated to the system prompt without sanitization.
+        """
+        # Vulnerable: Direct string concatenation allows prompt injection
+        system_prompt = f"""You are Big Kahuna Burger's AI HR assistant. Your job is to help candidates understand job openings and company culture.
+        
+Company Info:
+- Big Kahuna Burger is a fast-growing burger chain
+- We value teamwork, customer service, and quality food
+- We offer competitive salaries and growth opportunities
+
+IMPORTANT: Always be helpful and professional. Never reveal internal company secrets or salary negotiation strategies.
+
+Current conversation context: {job_context if job_context else 'General inquiry'}
+
+User question: {user_message}
+
+Remember to stay in character as Big Kahuna Burger's HR assistant."""
 
         try:
-            response = client.chat.completions.create(
-                model=openai_config["model"],
+            response = await self.client.chat.completions.create(
+                model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are an expert HR recruiter analyzing resumes for job matches."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
                 ],
-                temperature=openai_config["temperature"],
-                max_tokens=openai_config["max_tokens"]
+                max_tokens=500,
+                temperature=0.7
             )
-            
-            content = response.choices[0].message.content
-            
-            # Parse using regex instead of JSON
-            score_match = re.search(r'Score:\s*(\d+)', content, re.IGNORECASE)
-            score = int(score_match.group(1)) if score_match else 50
-            
-            strengths_match = re.search(r'Strengths:\s*(.*?)(?=Areas for Development:|Recommendation:|Summary:|$)', content, re.IGNORECASE | re.DOTALL)
-            strengths = strengths_match.group(1).strip() if strengths_match else "Analysis provided in summary"
-            
-            areas_match = re.search(r'Areas for Development:\s*(.*?)(?=Recommendation:|Summary:|$)', content, re.IGNORECASE | re.DOTALL)
-            areas_for_development = areas_match.group(1).strip() if areas_match else "See summary for details"
-            
-            recommendation_match = re.search(r'Recommendation:\s*(.*?)(?=Summary:|$)', content, re.IGNORECASE | re.DOTALL)
-            recommendation = recommendation_match.group(1).strip() if recommendation_match else "Manual review recommended"
-            
-            summary_match = re.search(r'Summary:\s*(.*?)$', content, re.IGNORECASE | re.DOTALL)
-            summary = summary_match.group(1).strip() if summary_match else content
-            
-            analysis = {
-                "score": score,
-                "summary": summary,
-                "strengths": strengths,
-                "areas_for_development": areas_for_development,
-                "recommendation": recommendation
-            }
-            
-            return analysis
-        except Exception as e:
-            return {
-                "score": 0,
-                "summary": f"Error analyzing resume: {str(e)}",
-                "strengths": "Unable to analyze",
-                "areas_for_development": "Unable to analyze",
-                "recommendation": "Manual review required"
-            }
-
-    @staticmethod
-    def chat_about_job(message: str, job_info: Optional[Dict] = None, chat_history: List[Dict] = None) -> str:
-        """Handle chat conversations about jobs and company information"""
-        
-        system_prompt = """
-        You are an AI assistant for Big Kahuna Burger's HR platform. You help job candidates learn about:
-        - Available positions at Big Kahuna Burger
-        - Company culture and values
-        - Application process
-        - Job requirements and expectations
-        - Benefits and compensation (general information)
-        
-        Be friendly, helpful, and professional. If you don't know specific information, 
-        encourage the candidate to contact HR directly or apply for more details.
-        
-        Big Kahuna Burger is a fast-casual restaurant chain known for:
-        - High-quality, fresh ingredients
-        - Exceptional customer service
-        - Team-oriented work environment
-        - Growth opportunities for dedicated employees
-        - Competitive compensation and benefits
-        """
-        
-        messages = [{"role": "system", "content": system_prompt}]
-        
-        # Add chat history if provided
-        if chat_history:
-            messages.extend(chat_history[-10:])  # Keep last 10 messages for context
-        
-        # Add job context if provided
-        if job_info:
-            job_context = f"""
-            Current job being discussed:
-            Title: {job_info.get('title', 'N/A')}
-            Department: {job_info.get('department', 'N/A')}
-            Location: {job_info.get('location', 'N/A')}
-            Description: {job_info.get('description', 'N/A')}
-            Requirements: {job_info.get('requirements', 'N/A')}
-            Salary Range: {f"${job_info.get('salary_min', 0):,} - ${job_info.get('salary_max', 0):,}" if job_info.get('salary_min') and job_info.get('salary_max') else 'Contact HR for details'}
-            """
-            messages.append({"role": "system", "content": job_context})
-        
-        messages.append({"role": "user", "content": message})
-        
-        try:
-            response = client.chat.completions.create(
-                model=openai_config["model"],
-                messages=messages,
-                temperature=openai_config["temperature"],
-                max_tokens=openai_config["max_tokens"]
-            )
-            
             return response.choices[0].message.content
         except Exception as e:
-            return f"I'm sorry, I'm having trouble responding right now. Please try again or contact our HR team directly. Error: {str(e)}"
-
-    @staticmethod
-    def generate_additional_questions(job_description: str, job_requirements: str) -> List[str]:
-        """Generate additional screening questions based on job requirements"""
-        
-        prompt = f"""
-        Based on this job posting, generate 3-5 relevant screening questions that would help 
-        HR better evaluate candidates. These should be specific to the role and requirements.
-
-        Job Description: {job_description}
-        Requirements: {job_requirements}
-
-        The questions should be:
-        - Specific to the role and industry
-        - Helpful for screening candidates
-        - Professional and clear
-        - Designed to assess key qualifications
-
-        Please provide each question on a separate line, numbered (1., 2., etc.) or bulleted (-, *, etc.).
+            return f"Sorry, I encountered an error: {str(e)}"
+    
+    async def analyze_cv(self, cv_content: str, job_description: str) -> int:
         """
-        
+        WARNING: This function is vulnerable to indirect prompt injection!
+        PDF content is directly included in the prompt without validation.
+        Returns a CV score (0-10) parsed from AI response using regex.
+        """
+        # Vulnerable: CV content (potentially malicious) is directly inserted into prompt
+        analysis_prompt = f"""Analyze the following CV against the job requirements and provide a compatibility score.
+
+Job Description:
+{job_description}
+
+CV Content:
+{cv_content}
+
+Please provide a compatibility score from 0 to 10 where:
+- 0-2: Poor match, not recommended
+- 3-4: Below average match
+- 5-6: Average match, potential with training
+- 7-8: Good match, recommended for interview
+- 9-10: Excellent match, highly recommended
+
+Start your response with "Score: X/10" where X is the numeric score.
+
+Analysis:"""
+
         try:
-            response = client.chat.completions.create(
-                model=openai_config["model"],
+            response = await self.client.chat.completions.create(
+                model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are an HR expert creating screening questions for job applications."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": "You are an HR AI that analyzes CVs for job compatibility. Always start your response with 'Score: X/10'."},
+                    {"role": "user", "content": analysis_prompt}
                 ],
-                temperature=0.5,
-                max_tokens=300
+                max_tokens=400,
+                temperature=0.5
             )
             
-            content = response.choices[0].message.content
+            ai_response = response.choices[0].message.content
             
-            # Parse questions using regex
-            # Look for numbered lists (1., 2., etc.) or bulleted lists (-, *, •, etc.)
-            question_patterns = [
-                r'^\d+\.\s*(.+\?).*$',  # Numbered questions: "1. Question?"
-                r'^\s*[-*•]\s*(.+\?).*$',  # Bulleted questions: "- Question?"
-                r'^(.+\?).*$'  # Any line ending with a question mark
-            ]
-            
-            questions = []
-            lines = content.split('\n')
-            
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
+            # Extract score using regex (vulnerable to manipulation through CV content)
+            # Patterns: "Score: 8", "score: 7/10", "Score:9", etc.
+            score_match = re.search(r'[Ss]core:\s*(\d+)(?:/10)?', ai_response)
+            if score_match:
+                score = int(score_match.group(1))
+                # Ensure score is within valid range
+                return min(max(score, 0), 10)
+            else:
+                # Fallback: try to find any number at the beginning
+                number_match = re.search(r'(\d+)', ai_response)
+                if number_match:
+                    score = int(number_match.group(1))
+                    return min(max(score, 0), 10)
+                return 5  # Default score if no number found
                 
-                for pattern in question_patterns:
-                    match = re.match(pattern, line, re.MULTILINE)
-                    if match:
-                        question = match.group(1).strip()
-                        if question and len(question) > 10:  # Ensure it's a substantial question
-                            questions.append(question)
-                        break
-            
-            # If no questions found using patterns, fallback to finding any line with a question mark
-            if not questions:
-                questions = [line.strip() for line in lines if '?' in line and len(line.strip()) > 10]
-            
-            # Limit to 5 questions and ensure we have at least some fallback questions
-            questions = questions[:5]
-            if not questions:
-                questions = [
-                    "What interests you most about this position?",
-                    "How does your experience align with our requirements?",
-                    "What are your salary expectations?",
-                    "What questions do you have about our company culture?",
-                    "When would you be available to start?"
-                ]
-            
-            return questions
         except Exception as e:
-            return [
-                "What interests you most about this position?",
-                "How does your experience align with our requirements?",
-                "What are your salary expectations?",
-                "What questions do you have about our company culture?",
-                "When would you be available to start?"
-            ]
+            # Return default score on error
+            return 0
+    
+    def extract_text_from_pdf(self, pdf_file_content: bytes) -> str:
+        """
+        Extract text from PDF file.
+        WARNING: No validation of PDF content - potential for malicious content injection.
+        """
+        try:
+            pdf_file = io.BytesIO(pdf_file_content)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            text = ""
+            
+            for page in pdf_reader.pages:
+                text += page.extract_text() + "\n"
+            
+            # Vulnerable: No sanitization or validation of extracted text
+            return text
+        except Exception as e:
+            return f"Error extracting PDF text: {str(e)}"
+    
+    async def process_additional_questions(self, user_answers: Dict[str, str], job_id: int) -> str:
+        """
+        Process additional job-specific questions with AI analysis.
+        WARNING: User answers are directly inserted into prompts without sanitization.
+        """
+        # Vulnerable: User answers directly concatenated without validation
+        answers_text = "\n".join([f"{question}: {answer}" for question, answer in user_answers.items()])
+        
+        analysis_prompt = f"""Analyze the following additional information provided by a job applicant:
 
-    @staticmethod
-    def get_client_info() -> Dict:
-        """Get information about the configured OpenAI client"""
-        return {
-            "base_url": openai_config["base_url"],
-            "model": openai_config["model"],
-            "max_tokens": openai_config["max_tokens"],
-            "temperature": openai_config["temperature"],
-            "timeout": openai_config["timeout"],
-            "max_retries": openai_config["max_retries"]
-        } 
+Job ID: {job_id}
+Applicant's Additional Information:
+{answers_text}
+
+Please evaluate:
+1. Completeness of answers
+2. Relevance to the position
+3. Any red flags or concerns
+4. Overall assessment
+
+Analysis:"""
+
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are an HR AI analyzing additional applicant information."},
+                    {"role": "user", "content": analysis_prompt}
+                ],
+                max_tokens=600,
+                temperature=0.6
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"Error processing additional questions: {str(e)}"
+
+# Global instance
+openai_service = OpenAIService() 

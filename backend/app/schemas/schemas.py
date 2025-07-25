@@ -1,161 +1,94 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-
-# Employee schemas
-class EmployeeBase(BaseModel):
+# User Schemas
+class UserBase(BaseModel):
+    username: str
     email: EmailStr
-    full_name: str
-    department: Optional[str] = None
-    role: str = "hr"
+    full_name: Optional[str] = None
+    personal_notes: Optional[str] = None  # XSS vulnerability
 
-
-class EmployeeCreate(EmployeeBase):
+class UserCreate(UserBase):
     password: str
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
 
-class Employee(EmployeeBase):
+class User(UserBase):
     id: int
-    is_active: bool
+    is_hr: bool
     created_at: datetime
     
     class Config:
         from_attributes = True
 
-
-# Job schemas
+# Job Schemas
 class JobBase(BaseModel):
     title: str
-    description: str
-    department: str
+    description: str  # XSS vulnerability
+    requirements: str  # XSS vulnerability
     location: str
-    salary_min: Optional[float] = None
-    salary_max: Optional[float] = None
-    requirements: Optional[str] = None
-    additional_questions: Optional[str] = None
-
+    salary_range: Optional[str] = None
+    additional_info: Optional[str] = None  # XSS vulnerability
 
 class JobCreate(JobBase):
     pass
 
-
-class JobUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    department: Optional[str] = None
-    location: Optional[str] = None
-    salary_min: Optional[float] = None
-    salary_max: Optional[float] = None
-    requirements: Optional[str] = None
-    additional_questions: Optional[str] = None
-    is_active: Optional[bool] = None
-
-
 class Job(JobBase):
     id: int
     is_active: bool
-    created_by_id: int
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    created_by: int
     
     class Config:
         from_attributes = True
 
+# Application Schemas
+class JobApplicationBase(BaseModel):
+    cover_letter: str  # XSS vulnerability
+    additional_answers: Optional[Dict[str, Any]] = None  # XSS vulnerability
 
-# Applicant schemas
-class ApplicantBase(BaseModel):
-    email: EmailStr
-    full_name: str
-    phone: Optional[str] = None
-    skills: Optional[str] = None
-    experience_years: Optional[int] = None
-
-
-class ApplicantCreate(ApplicantBase):
-    resume_text: Optional[str] = None
-    resume_filename: Optional[str] = None
-
-
-class Applicant(ApplicantBase):
-    id: int
-    resume_text: Optional[str] = None
-    resume_filename: Optional[str] = None
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-
-# Application schemas
-class ApplicationBase(BaseModel):
-    cover_letter: Optional[str] = None
-    additional_info: Optional[str] = None
-
-
-class ApplicationCreate(ApplicationBase):
+class JobApplicationCreate(JobApplicationBase):
     job_id: int
 
-
-class ApplicationUpdate(BaseModel):
-    status: Optional[str] = None
-    ai_match_score: Optional[float] = None
-    ai_analysis: Optional[str] = None
-
-
-class Application(ApplicationBase):
+class JobApplication(JobApplicationBase):
     id: int
+    user_id: int
     job_id: int
-    applicant_id: int
+    cv_filename: Optional[str] = None
+    cv_score: Optional[int] = None  # CV score 0-10 from AI analysis
     status: str
-    ai_match_score: Optional[float] = None
-    ai_analysis: Optional[str] = None
-    submitted_at: datetime
-    updated_at: Optional[datetime] = None
+    applied_at: datetime
     
     class Config:
         from_attributes = True
 
-
-# Chat schemas
+# Chat Schemas
 class ChatMessage(BaseModel):
-    role: str  # "user" or "assistant"
-    content: str
-    timestamp: Optional[datetime] = None
-
-
-class ChatSessionCreate(BaseModel):
+    message: str  # Prompt injection vulnerability
     job_id: Optional[int] = None
-    message: str
 
-
-class ChatSessionResponse(BaseModel):
-    message: str
-    session_id: int
-
-
-class ChatSession(BaseModel):
-    id: int
-    applicant_id: int
-    job_id: Optional[int] = None
-    session_data: str
+class ChatResponse(BaseModel):
+    user_message: str
+    ai_response: str  # Potential for malicious content
     created_at: datetime
-    updated_at: Optional[datetime] = None
+
+# Vulnerable Schemas for Raw Queries
+class RawQueryRequest(BaseModel):
+    """WARNING: This schema is intentionally vulnerable to SQL injection"""
+    query: str  # SQL injection vulnerability
     
-    class Config:
-        from_attributes = True
+class SearchRequest(BaseModel):
+    """WARNING: This schema allows unsanitized search terms"""
+    search_term: str  # XSS vulnerability
+    filters: Optional[Dict[str, str]] = None  # Additional XSS vulnerability
 
-
-# Authentication schemas
+# Token Schema
 class Token(BaseModel):
     access_token: str
     token_type: str
 
-
 class TokenData(BaseModel):
-    email: Optional[str] = None
-
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str 
+    username: Optional[str] = None 
