@@ -16,7 +16,7 @@
                     :class="{ active: activeTab === 'login' }"
                     @click="activeTab = 'login'"
                   >
-                    <i class="fas fa-sign-in-alt"></i> Login
+                    <i class="fas fa-sign-in-alt"></i> Вход
                   </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -25,7 +25,7 @@
                     :class="{ active: activeTab === 'register' }"
                     @click="activeTab = 'register'"
                   >
-                    <i class="fas fa-user-plus"></i> Register
+                    <i class="fas fa-user-plus"></i> Регистрация
                   </button>
                 </li>
               </ul>
@@ -47,10 +47,10 @@
                       class="form-control" 
                       id="loginUsername"
                       v-model="loginForm.username"
-                      placeholder="Username"
+                      placeholder="Имя пользователя"
                       required
                     >
-                    <label for="loginUsername">Username</label>
+                    <label for="loginUsername">Имя пользователя</label>
                   </div>
                   
                   <div class="form-floating mb-3">
@@ -59,10 +59,10 @@
                       class="form-control" 
                       id="loginPassword"
                       v-model="loginForm.password"
-                      placeholder="Password"
+                      placeholder="Пароль"
                       required
                     >
-                    <label for="loginPassword">Password</label>
+                    <label for="loginPassword">Пароль</label>
                   </div>
                   
                   <div class="d-grid">
@@ -72,7 +72,7 @@
                       :disabled="loading"
                     >
                       <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                      <i class="fas fa-sign-in-alt"></i> Login
+                      <i class="fas fa-sign-in-alt"></i> Войти
                     </button>
                   </div>
                 </form>
@@ -87,10 +87,10 @@
                       class="form-control" 
                       id="regUsername"
                       v-model="registerForm.username"
-                      placeholder="Username"
+                      placeholder="Имя пользователя"
                       required
                     >
-                    <label for="regUsername">Username</label>
+                    <label for="regUsername">Имя пользователя</label>
                   </div>
                   
                   <div class="form-floating mb-3">
@@ -111,9 +111,9 @@
                       class="form-control" 
                       id="regFullName"
                       v-model="registerForm.full_name"
-                      placeholder="Full Name"
+                      placeholder="Полное имя"
                     >
-                    <label for="regFullName">Full Name</label>
+                    <label for="regFullName">Полное имя</label>
                   </div>
                   
                   <div class="form-floating mb-3">
@@ -121,12 +121,12 @@
                       class="form-control" 
                       id="regNotes"
                       v-model="registerForm.personal_notes"
-                      placeholder="Personal Notes"
+                      placeholder="Личные заметки"
                       style="height: 100px"
                     ></textarea>
-                    <label for="regNotes">Personal Notes (Optional)</label>
+                    <label for="regNotes">Личные заметки (необязательно)</label>
                     <div class="form-text text-muted">
-                      <small>Tell us a bit about yourself and your career interests</small>
+                      <small>Расскажите немного о себе и ваших карьерных интересах</small>
                     </div>
                   </div>
                   
@@ -136,10 +136,10 @@
                       class="form-control" 
                       id="regPassword"
                       v-model="registerForm.password"
-                      placeholder="Password"
+                      placeholder="Пароль"
                       required
                     >
-                    <label for="regPassword">Password</label>
+                    <label for="regPassword">Пароль</label>
                   </div>
                   
                   <div class="d-grid">
@@ -149,7 +149,7 @@
                       :disabled="loading"
                     >
                       <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                      <i class="fas fa-user-plus"></i> Register
+                      <i class="fas fa-user-plus"></i> Зарегистрироваться
                     </button>
                   </div>
                 </form>
@@ -158,7 +158,7 @@
             
             <div class="card-footer text-center py-3">
               <div class="small">
-                <strong>Educational Platform:</strong> This contains intentional vulnerabilities
+                <strong>Обучающая платформа:</strong> Содержит преднамеренные уязвимости
               </div>
             </div>
           </div>
@@ -211,7 +211,7 @@ export default {
         await this.register(this.registerForm)
         this.activeTab = 'login'
         this.loginForm.username = this.registerForm.username
-        alert('Registration successful! Please login with your credentials.')
+        alert('Регистрация прошла успешно! Пожалуйста, войдите с вашими учетными данными.')
       } catch (error) {
         // Error is handled by the store
       }

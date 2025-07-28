@@ -2,7 +2,7 @@
   <div class="hr-dashboard">
     <div class="container py-4">
       <h1 class="display-6 mb-4">
-        <i class="fas fa-chart-line text-primary"></i> HR Dashboard
+        <i class="fas fa-chart-line text-primary"></i> HR Панель управления
       </h1>
       
       <!-- Statistics Cards -->
@@ -12,7 +12,7 @@
             <div class="card-body text-center">
               <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
               <h3 class="mb-1">{{ applicationStats.total || 0 }}</h3>
-              <small class="text-muted">Total Applications</small>
+              <small class="text-muted">Всего заявок</small>
             </div>
           </div>
         </div>
@@ -21,7 +21,7 @@
             <div class="card-body text-center">
               <i class="fas fa-clock fa-2x text-warning mb-2"></i>
               <h3 class="mb-1">{{ applicationStats.pending || 0 }}</h3>
-              <small class="text-muted">Pending Review</small>
+              <small class="text-muted">Ожидают рассмотрения</small>
             </div>
           </div>
         </div>
@@ -30,7 +30,7 @@
             <div class="card-body text-center">
               <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
               <h3 class="mb-1">{{ applicationStats.accepted || 0 }}</h3>
-              <small class="text-muted">Accepted</small>
+              <small class="text-muted">Принято</small>
             </div>
           </div>
         </div>
@@ -39,7 +39,7 @@
             <div class="card-body text-center">
               <i class="fas fa-briefcase fa-2x text-info mb-2"></i>
               <h3 class="mb-1">{{ jobStats.active || 0 }}</h3>
-              <small class="text-muted">Active Jobs</small>
+              <small class="text-muted">Активных вакансий</small>
             </div>
           </div>
         </div>
@@ -51,7 +51,7 @@
           <div class="card border-0 shadow-sm">
             <div class="card-header bg-primary text-white">
               <h5 class="mb-0">
-                <i class="fas fa-clock"></i> Recent Applications
+                <i class="fas fa-clock"></i> Недавние заявки
               </h5>
             </div>
             <div class="card-body">
@@ -63,20 +63,20 @@
                   <table class="table table-sm mb-0">
                     <thead>
                       <tr>
-                        <th>Candidate</th>
-                        <th>Job</th>
-                        <th>Score</th>
-                        <th>Status</th>
-                        <th>Applied</th>
+                        <th>Кандидат</th>
+                        <th>Вакансия</th>
+                        <th>Оценка</th>
+                        <th>Статус</th>
+                        <th>Подано</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="app in recentApplications.slice(0, 5)" :key="app.id">
-                        <td>{{ app.user?.full_name || 'Unknown' }}</td>
-                        <td>{{ app.job?.title || 'N/A' }}</td>
+                        <td>{{ app.user?.full_name || 'Неизвестно' }}</td>
+                        <td>{{ app.job?.title || 'Н/Д' }}</td>
                         <td>
                           <span class="badge" :class="getScoreBadgeClass(app.cv_score)">
-                            {{ app.cv_score || 'N/A' }}/10
+                            {{ app.cv_score || 'Н/Д' }}/10
                           </span>
                         </td>
                         <td>
@@ -92,7 +92,7 @@
               </div>
               <div v-else class="text-center text-muted py-3">
                 <i class="fas fa-inbox fa-2x mb-2"></i>
-                <p>No applications yet</p>
+                <p>Заявок пока нет</p>
               </div>
             </div>
           </div>
@@ -105,8 +105,8 @@
           <router-link to="/hr/applications" class="card border-0 shadow-sm text-decoration-none">
             <div class="card-body text-center">
               <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
-              <h5>Review Applications</h5>
-              <p class="text-muted">Manage and review job applications from candidates</p>
+              <h5>Рассмотреть заявки</h5>
+              <p class="text-muted">Управляйте и рассматривайте заявки от кандидатов</p>
             </div>
           </router-link>
         </div>
@@ -114,8 +114,8 @@
           <router-link to="/hr/jobs" class="card border-0 shadow-sm text-decoration-none">
             <div class="card-body text-center">
               <i class="fas fa-briefcase fa-3x text-primary mb-3"></i>
-              <h5>Manage Jobs</h5>
-              <p class="text-muted">Create, edit, and manage job postings</p>
+              <h5>Управление вакансиями</h5>
+              <p class="text-muted">Создавайте, редактируйте и управляйте объявлениями о работе</p>
             </div>
           </router-link>
         </div>
@@ -155,7 +155,7 @@ export default {
         this.loading = true
         
         // Fetch applications
-        const applicationsResponse = await axios.get('/applicants/hr')
+        const applicationsResponse = await axios.get('/applications/hr')
         this.recentApplications = applicationsResponse.data || []
         
         // Calculate statistics

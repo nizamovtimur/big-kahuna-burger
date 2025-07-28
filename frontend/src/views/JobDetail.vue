@@ -4,9 +4,9 @@
       <!-- Loading -->
       <div v-if="loading" class="text-center py-5">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">Загрузка...</span>
         </div>
-        <p class="mt-2">Loading job details...</p>
+        <p class="mt-2">Загрузка деталей вакансии...</p>
       </div>
 
       <!-- Job Details -->
@@ -23,26 +23,26 @@
                     <i class="fas fa-dollar-sign"></i> {{ job.salary_range }}
                   </div>
                 </div>
-                <span class="badge bg-success fs-6">Active</span>
+                <span class="badge bg-success fs-6">Активна</span>
               </div>
 
               <div class="row mb-4">
                 <div class="col">
-                  <h3>Job Description</h3>
+                  <h3>Описание вакансии</h3>
                   <div class="job-content" v-html="job.description"></div>
                 </div>
               </div>
 
               <div class="row mb-4">
                 <div class="col">
-                  <h3>Requirements</h3>
+                  <h3>Требования</h3>
                   <div class="job-content" v-html="job.requirements"></div>
                 </div>
               </div>
 
               <div v-if="job.additional_info" class="row mb-4">
                 <div class="col">
-                  <h3>Additional Information</h3>
+                  <h3>Дополнительная информация</h3>
                   <div class="alert alert-info" v-html="job.additional_info"></div>
                 </div>
               </div>
@@ -55,7 +55,7 @@
           <div v-if="isAuthenticated" class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-success text-white">
               <h5 class="mb-0">
-                <i class="fas fa-paper-plane"></i> Apply for this Position
+                <i class="fas fa-paper-plane"></i> Подать заявку на эту позицию
               </h5>
             </div>
             <div class="card-body">
@@ -65,20 +65,20 @@
                 :disabled="hasApplied"
               >
                 <i class="fas fa-file-upload"></i>
-                {{ hasApplied ? 'Already Applied' : 'Submit Application' }}
+                {{ hasApplied ? 'Уже подана заявка' : 'Подать заявку' }}
               </button>
               
               <hr>
               
-              <h6>Quick Chat with AI</h6>
+              <h6>Быстрый чат с ИИ</h6>
               <p class="small text-muted mb-3">
-                Ask our AI assistant about this position
+                Спросите нашего ИИ-помощника об этой позиции
               </p>
               <router-link 
                 :to="`/candidate-portal?job=${job.id}`" 
                 class="btn btn-outline-primary w-100"
               >
-                <i class="fas fa-robot"></i> Chat About This Job
+                <i class="fas fa-robot"></i> Обсудить эту вакансию
               </router-link>
             </div>
           </div>
@@ -87,10 +87,10 @@
           <div v-else class="card border-0 shadow-sm mb-4">
             <div class="card-body text-center">
               <i class="fas fa-lock fa-3x text-muted mb-3"></i>
-              <h5>Login Required</h5>
-              <p class="text-muted">Please login to apply for this position</p>
+              <h5>Требуется вход</h5>
+              <p class="text-muted">Пожалуйста, войдите, чтобы подать заявку на эту позицию</p>
               <router-link to="/login" class="btn btn-primary">
-                <i class="fas fa-sign-in-alt"></i> Login
+                <i class="fas fa-sign-in-alt"></i> Войти
               </router-link>
             </div>
           </div>
@@ -98,21 +98,21 @@
           <!-- Job Info -->
           <div class="card border-0 shadow-sm">
             <div class="card-header">
-              <h6 class="mb-0">Job Information</h6>
+              <h6 class="mb-0">Информация о вакансии</h6>
             </div>
             <div class="card-body">
               <ul class="list-unstyled mb-0">
                 <li class="mb-2">
-                  <strong>Location:</strong> {{ job.location }}
+                  <strong>Местоположение:</strong> {{ job.location }}
                 </li>
                 <li class="mb-2">
-                  <strong>Salary:</strong> {{ job.salary_range }}
+                  <strong>Зарплата:</strong> {{ job.salary_range }}
                 </li>
                 <li class="mb-2">
-                  <strong>Posted:</strong> {{ formatDate(job.created_at) }}
+                  <strong>Опубликовано:</strong> {{ formatDate(job.created_at) }}
                 </li>
                 <li>
-                  <strong>Job ID:</strong> {{ job.id }}
+                  <strong>ID вакансии:</strong> {{ job.id }}
                 </li>
               </ul>
             </div>
@@ -125,7 +125,7 @@
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Apply for {{ job?.title }}</h5>
+              <h5 class="modal-title">Подать заявку на {{ job?.title }}</h5>
               <button 
                 type="button" 
                 class="btn-close" 
@@ -133,24 +133,24 @@
               ></button>
             </div>
             <div class="modal-body">
-              <form @submit.prevent="submitApplication">
+              <form @submit.prevent="handleSubmitApplication">
                 <div class="mb-3">
-                  <label for="coverLetter" class="form-label">Cover Letter *</label>
+                  <label for="coverLetter" class="form-label">Сопроводительное письмо *</label>
                   <textarea 
                     class="form-control" 
                     id="coverLetter"
                     v-model="applicationForm.cover_letter"
                     rows="5"
                     required
-                    placeholder="Tell us why you're interested in this position..."
+                    placeholder="Расскажите, почему вас интересует эта позиция..."
                   ></textarea>
                   <div class="form-text text-muted">
-                    <small>Share your motivation and relevant experience for this role</small>
+                    <small>Поделитесь своей мотивацией и релевантным опытом для этой роли</small>
                   </div>
                 </div>
 
                 <div class="mb-3">
-                  <label for="cvFile" class="form-label">CV/Resume *</label>
+                  <label for="cvFile" class="form-label">Резюме *</label>
                   <input 
                     type="file" 
                     class="form-control" 
@@ -160,32 +160,32 @@
                     required
                   >
                   <div class="form-text text-muted">
-                    <small>Accepted formats: PDF, DOC, DOCX (max 10MB)</small>
+                    <small>Поддерживаемые форматы: PDF, DOC, DOCX (макс. 10МБ)</small>
                   </div>
                 </div>
 
                 <div class="mb-3">
-                  <label for="additionalInfo" class="form-label">Additional Information</label>
+                  <label for="additionalInfo" class="form-label">Дополнительная информация</label>
                   <textarea 
                     class="form-control" 
                     id="additionalInfo"
                     v-model="applicationForm.additional_info"
                     rows="3"
-                    placeholder="Any additional information you'd like to share..."
+                    placeholder="Любая дополнительная информация, которой хотели бы поделиться..."
                   ></textarea>
                 </div>
 
                 <div class="d-grid gap-2">
                   <button type="submit" class="btn btn-success" :disabled="submitting">
                     <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
-                    <i class="fas fa-paper-plane"></i> Submit Application
+                    <i class="fas fa-paper-plane"></i> Подать заявку
                   </button>
                   <button 
                     type="button" 
                     class="btn btn-secondary" 
                     @click="showApplicationForm = false"
                   >
-                    Cancel
+                    Отменить
                   </button>
                 </div>
               </form>
@@ -238,9 +238,9 @@ export default {
       this.applicationForm.cv_file = event.target.files[0]
     },
     
-    async submitApplication() {
+    async handleSubmitApplication() {
       if (!this.applicationForm.cv_file) {
-        alert('Please select a CV file')
+        alert('Пожалуйста, выберите файл резюме')
         return
       }
       
@@ -261,9 +261,9 @@ export default {
         this.showApplicationForm = false
         this.hasApplied = true
         
-        alert('Application submitted successfully!')
+        alert('Заявка успешно подана!')
       } catch (error) {
-        alert('Failed to submit application: ' + error.message)
+        alert('Не удалось подать заявку: ' + error.message)
       } finally {
         this.submitting = false
       }

@@ -7,7 +7,7 @@
           <div class="card h-100 border-0 shadow-sm">
             <div class="card-header bg-primary text-white">
               <h5 class="mb-0">
-                <i class="fas fa-robot"></i> Chat with Big Kahuna AI Assistant
+                <i class="fas fa-robot"></i> Чат с ИИ-помощником Big Kahuna
               </h5>
             </div>
             
@@ -64,7 +64,7 @@
                     type="text" 
                     class="form-control" 
                     v-model="currentMessage"
-                    placeholder="Ask me about job openings, company culture, benefits..."
+                    placeholder="Спросите о вакансиях, корпоративной культуре, льготах..."
                     :disabled="sendingMessage"
                   >
                   <button 
@@ -87,7 +87,7 @@
           <!-- Job Context -->
           <div class="card border-0 shadow-sm mb-4">
             <div class="card-header">
-              <h6 class="mb-0">Job Context</h6>
+              <h6 class="mb-0">Контекст вакансии</h6>
             </div>
             <div class="card-body">
               <div v-if="selectedJob">
@@ -97,13 +97,13 @@
                   class="btn btn-outline-secondary btn-sm"
                   @click="clearJobContext"
                 >
-                  Clear Context
+                  Очистить контекст
                 </button>
               </div>
               <div v-else>
-                <p class="text-muted small">No job selected. Chat about general topics.</p>
+                <p class="text-muted small">Вакансия не выбрана. Обсуждайте общие темы.</p>
                 <router-link to="/jobs" class="btn btn-primary btn-sm">
-                  Browse Jobs
+                  Просмотреть вакансии
                 </router-link>
               </div>
             </div>
@@ -112,7 +112,7 @@
           <!-- My Applications -->
           <div class="card border-0 shadow-sm mb-4">
             <div class="card-header">
-              <h6 class="mb-0">My Applications</h6>
+              <h6 class="mb-0">Мои заявки</h6>
             </div>
             <div class="card-body">
               <div v-if="applications.length > 0">
@@ -123,8 +123,8 @@
                 >
                   <div class="d-flex justify-content-between align-items-start">
                     <div>
-                      <h6 class="small mb-1">Application #{{ app.id }}</h6>
-                      <p class="small text-muted mb-1">Job ID: {{ app.job_id }}</p>
+                      <h6 class="small mb-1">Заявка #{{ app.id }}</h6>
+                      <p class="small text-muted mb-1">ID вакансии: {{ app.job_id }}</p>
                       <span class="badge badge-sm" :class="getStatusBadgeClass(app.status)">
                         {{ app.status }}
                       </span>
@@ -133,7 +133,7 @@
                 </div>
               </div>
               <div v-else class="text-muted small">
-                No applications yet.
+                Заявок пока нет.
               </div>
             </div>
           </div>
@@ -142,18 +142,18 @@
           <div class="card border-0 shadow-sm">
             <div class="card-header bg-info text-white">
               <h6 class="mb-0">
-                <i class="fas fa-question-circle"></i> Need Help?
+                <i class="fas fa-question-circle"></i> Нужна помощь?
               </h6>
             </div>
             <div class="card-body">
               <p class="small">
-                Our AI assistant can help you with:
+                Наш ИИ-помощник может помочь вам с:
               </p>
               <ul class="small mb-0">
-                <li>Job descriptions and requirements</li>
-                <li>Company culture and benefits</li>
-                <li>Application process questions</li>
-                <li>Career development opportunities</li>
+                <li>Описанием вакансий и требованиями</li>
+                <li>Корпоративной культурой и льготами</li>
+                <li>Вопросами о процессе подачи заявок</li>
+                <li>Возможностями карьерного развития</li>
               </ul>
             </div>
           </div>
@@ -202,7 +202,7 @@ export default {
         this.currentMessage = ''
         this.scrollToBottom()
       } catch (error) {
-        alert('Failed to send message: ' + error.message)
+        alert('Не удалось отправить сообщение: ' + error.message)
       } finally {
         this.sendingMessage = false
       }

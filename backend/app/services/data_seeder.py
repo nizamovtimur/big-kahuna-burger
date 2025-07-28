@@ -20,43 +20,43 @@ def create_sample_users(db: Session):
     users_data = [
         {
             "username": "hr_admin",
-            "email": "hr@bigkahuna.com",
-            "password": "secret123",
-            "full_name": "HR Administrator",
+            "email": "hr@bigkahuna.ru",
+            "password": "pass1234",
+            "full_name": "Анна Петрова",
             "is_hr": True,
-            "personal_notes": "Main HR account for Big Kahuna Burger"
+            "personal_notes": "Главный HR-менеджер Big Kahuna Burger в России"
         },
         {
             "username": "candidate1",
-            "email": "john@example.com",
-            "password": "secret123",
-            "full_name": "John Candidate",
+            "email": "ivan@example.ru",
+            "password": "pass1234",
+            "full_name": "Иван Смирнов",
             "is_hr": False,
-            "personal_notes": "Experienced chef looking for opportunities"
+            "personal_notes": "Опытный повар, ищет возможности карьерного роста"
         },
         {
             "username": "candidate2",
-            "email": "sarah@example.com",
-            "password": "password123",
-            "full_name": "Sarah Driver",
+            "email": "elena@example.ru",
+            "password": "pass1234",
+            "full_name": "Елена Васильева",
             "is_hr": False,
-            "personal_notes": "Reliable driver with clean record"
+            "personal_notes": "Надежный курьер с безупречной репутацией"
         },
         {
             "username": "manager1",
-            "email": "mike@bigkahuna.com",
-            "password": "admin123",
-            "full_name": "Mike Manager",
+            "email": "mikhail@bigkahuna.ru",
+            "password": "pass1234",
+            "full_name": "Михаил Козлов",
             "is_hr": True,
-            "personal_notes": "Store manager with hiring authority"
+            "personal_notes": "Менеджер ресторана с правами найма сотрудников"
         },
         {
             "username": "testuser",
-            "email": "test@test.com",
-            "password": "test",
-            "full_name": "Test User",
+            "email": "test@test.ru",
+            "password": "pass1234",
+            "full_name": "Тестовый Пользователь",
             "is_hr": False,
-            "personal_notes": "Test account for platform evaluation"
+            "personal_notes": "Тестовый аккаунт для оценки платформы"
         }
     ]
     
@@ -72,54 +72,54 @@ def create_sample_users(db: Session):
         db.add(user)
     
     db.commit()
-    print("✅ Sample users created")
+    print("✅ Образцы пользователей созданы")
 
 def create_sample_jobs(db: Session):
     """Create sample job postings"""
     jobs_data = [
         {
-            "title": "Burger Chef",
-            "description": "Join our kitchen team at Big Kahuna Burger! We are looking for passionate cooks who love creating amazing burgers.",
-            "requirements": "Experience with cooking, food safety knowledge, teamwork skills",
-            "location": "Los Angeles, CA",
-            "salary_range": "$15-20/hour",
-            "additional_info": "Great benefits! Health insurance, flexible scheduling, and free meals!",
+            "title": "Повар-бургерист",
+            "description": "Присоединяйтесь к нашей кухонной команде Big Kahuna Burger! Мы ищем увлеченных поваров, которые любят создавать потрясающие бургеры.",
+            "requirements": "Опыт работы поваром, знание санитарных норм, навыки работы в команде",
+            "location": "Москва",
+            "salary_range": "80,000-120,000 ₽/месяц",
+            "additional_info": "Отличные льготы! Медицинская страховка, гибкий график и бесплатное питание!",
             "created_by": 1
         },
         {
-            "title": "Delivery Driver",
-            "description": "Deliver delicious Big Kahuna Burgers to our customers. Must have reliable transportation.",
-            "requirements": "Valid driver license, clean driving record, customer service skills",
-            "location": "Los Angeles, CA",
-            "salary_range": "$12/hour + tips",
-            "additional_info": "Flexible hours available. Must provide own vehicle.",
+            "title": "Курьер-доставщик",
+            "description": "Доставляйте вкусные бургеры Big Kahuna нашим клиентам. Необходим надежный транспорт.",
+            "requirements": "Водительские права категории B, чистая история вождения, навыки обслуживания клиентов",
+            "location": "Санкт-Петербург",
+            "salary_range": "60,000 ₽/месяц + чаевые",
+            "additional_info": "Гибкий график работы. Собственный автомобиль обязателен.",
             "created_by": 1
         },
         {
-            "title": "Restaurant Manager",
-            "description": "Lead our restaurant team and ensure excellent customer service at Big Kahuna Burger.",
-            "requirements": "Management experience, leadership skills, food service background",
-            "location": "Los Angeles, CA",
-            "salary_range": "$45,000-55,000/year",
-            "additional_info": "Great opportunity for growth! Full benefits package included.",
+            "title": "Управляющий рестораном",
+            "description": "Руководите командой ресторана и обеспечивайте отличное обслуживание клиентов в Big Kahuna Burger.",
+            "requirements": "Опыт управления, лидерские качества, опыт работы в общепите",
+            "location": "Екатеринбург",
+            "salary_range": "150,000-200,000 ₽/месяц",
+            "additional_info": "Отличная возможность для карьерного роста! Полный соцпакет.",
             "created_by": 4
         },
         {
-            "title": "Customer Service Representative",
-            "description": "Handle customer inquiries and complaints with a smile! Be the face of Big Kahuna Burger.",
-            "requirements": "Excellent communication skills, problem-solving ability, patience",
-            "location": "Remote",
-            "salary_range": "$14-16/hour",
-            "additional_info": "Work from home opportunity!",
+            "title": "Специалист по работе с клиентами",
+            "description": "Обрабатывайте запросы и жалобы клиентов с улыбкой! Станьте лицом Big Kahuna Burger.",
+            "requirements": "Отличные коммуникативные навыки, умение решать проблемы, терпение",
+            "location": "Удаленно",
+            "salary_range": "70,000-90,000 ₽/месяц",
+            "additional_info": "Возможность работы из дома!",
             "created_by": 1
         },
         {
-            "title": "Marketing Specialist",
-            "description": "Help promote Big Kahuna Burger through digital marketing campaigns and social media.",
-            "requirements": "Marketing degree preferred, social media experience, creative thinking",
-            "location": "San Francisco, CA",
-            "salary_range": "$40,000-50,000/year",
-            "additional_info": "Creative role with lots of autonomy!",
+            "title": "Специалист по маркетингу",
+            "description": "Помогите продвигать Big Kahuna Burger через цифровые маркетинговые кампании и социальные сети.",
+            "requirements": "Образование в области маркетинга желательно, опыт работы в соцсетях, креативное мышление",
+            "location": "Новосибирск",
+            "salary_range": "100,000-140,000 ₽/месяц",
+            "additional_info": "Творческая роль с большой самостоятельностью!",
             "created_by": 4
         }
     ]
@@ -138,31 +138,31 @@ def create_sample_jobs(db: Session):
         db.add(job)
     
     db.commit()
-    print("✅ Sample jobs created")
+    print("✅ Образцы вакансий созданы")
 
 def create_sample_applications(db: Session):
     """Create sample job applications"""
     applications_data = [
         {
             "user_id": 2,  # candidate1
-            "job_id": 1,   # Burger Chef
-            "cover_letter": "I am very interested in the Burger Chef position. I have 3 years of experience in fast food and love cooking!",
+            "job_id": 1,   # Повар-бургерист
+            "cover_letter": "Меня очень интересует позиция повара-бургериста. У меня 3 года опыта работы в фастфуде и я обожаю готовить!",
             "cv_score": 7,
-            "additional_answers": {"experience": "3 years in fast food", "availability": "Full-time"}
+            "additional_answers": {"experience": "3 года в фастфуде", "availability": "Полная занятость"}
         },
         {
             "user_id": 3,  # candidate2
-            "job_id": 2,   # Delivery Driver
-            "cover_letter": "I have been driving professionally for 5 years with no accidents. I know the LA area very well.",
+            "job_id": 2,   # Курьер-доставщик
+            "cover_letter": "Я профессионально вожу уже 5 лет без единой аварии. Отлично знаю Санкт-Петербург и пригороды.",
             "cv_score": 8,
-            "additional_answers": {"license_type": "Class C", "vehicle": "2018 Honda Civic"}
+            "additional_answers": {"license_type": "Категория B", "vehicle": "Lada Vesta 2020"}
         },
         {
             "user_id": 5,  # testuser
-            "job_id": 4,   # Customer Service
-            "cover_letter": "I would love to work in customer service! I have great communication skills and enjoy helping people solve problems.",
+            "job_id": 4,   # Специалист по работе с клиентами
+            "cover_letter": "Я бы с удовольствием работал в службе поддержки клиентов! У меня отличные коммуникативные навыки и мне нравится помогать людям решать проблемы.",
             "cv_score": 5,
-            "additional_answers": {"experience": "2 years customer service", "availability": "Part-time"}
+            "additional_answers": {"experience": "2 года в клиентской поддержке", "availability": "Неполная занятость"}
         }
     ]
     
@@ -179,7 +179,7 @@ def create_sample_applications(db: Session):
         db.add(application)
     
     db.commit()
-    print("✅ Sample applications created")
+    print("✅ Образцы заявок созданы")
 
 def create_sample_chat_sessions(db: Session):
     """Create sample chat sessions with realistic conversations"""
@@ -187,26 +187,26 @@ def create_sample_chat_sessions(db: Session):
         {
             "user_id": 2,
             "job_id": 1,
-            "user_message": "What are the benefits of working at Big Kahuna Burger?",
-            "ai_response": "Great question! At Big Kahuna Burger, we offer competitive wages, health insurance, flexible scheduling, and free meals during your shifts. We also provide opportunities for advancement within our growing company."
+            "user_message": "Какие льготы предоставляет Big Kahuna Burger своим сотрудникам?",
+            "ai_response": "Отличный вопрос! В Big Kahuna Burger мы предлагаем конкурентную зарплату, медицинское страхование, гибкий график работы и бесплатное питание во время смен. Также мы предоставляем возможности карьерного роста в нашей растущей компании."
         },
         {
             "user_id": 3,
             "job_id": 2,
-            "user_message": "What are the working hours for delivery drivers?",
-            "ai_response": "Our delivery drivers typically work flexible shifts between 11 AM and 11 PM. We offer both part-time and full-time positions, and you can often choose your preferred hours based on availability."
+            "user_message": "Какой график работы у курьеров-доставщиков?",
+            "ai_response": "Наши курьеры-доставщики обычно работают в гибкие смены с 11:00 до 23:00. Мы предлагаем как частичную, так и полную занятость, и вы часто можете выбирать удобные для вас часы в зависимости от наличия."
         },
         {
             "user_id": 5,
             "job_id": None,
-            "user_message": "What types of career advancement opportunities are available at Big Kahuna Burger?",
-            "ai_response": "Big Kahuna Burger offers several career advancement paths! Many of our managers started as crew members and worked their way up. We provide training programs, leadership development, and opportunities to move into supervisory roles, assistant management, and eventually general management positions."
+            "user_message": "Какие возможности карьерного роста доступны в Big Kahuna Burger?",
+            "ai_response": "Big Kahuna Burger предлагает несколько путей карьерного роста! Многие наши менеджеры начинали как рядовые сотрудники и дослужились до руководящих позиций. Мы предоставляем программы обучения, развитие лидерских качеств и возможности перехода на супервайзерские роли, заместителя менеджера и в итоге генерального менеджера."
         },
         {
             "user_id": 5,
             "job_id": 4,
-            "user_message": "What skills are most important for the Customer Service Representative position?",
-            "ai_response": "For our Customer Service Representative position, the most important skills are excellent communication, active listening, problem-solving abilities, patience, and a positive attitude. Experience with customer service software is helpful but we provide training. We value empathy and the ability to turn challenging situations into positive experiences."
+            "user_message": "Какие навыки наиболее важны для позиции специалиста по работе с клиентами?",
+            "ai_response": "Для позиции специалиста по работе с клиентами наиболее важны отличные коммуникативные навыки, активное слушание, умение решать проблемы, терпение и позитивное отношение. Опыт работы с программами клиентской поддержки полезен, но мы обеспечиваем обучение. Мы ценим эмпатию и способность превращать сложные ситуации в позитивный опыт."
         }
     ]
     
@@ -220,19 +220,19 @@ def create_sample_chat_sessions(db: Session):
         db.add(session)
     
     db.commit()
-    print("✅ Sample chat sessions created")
+    print("✅ Образцы чат-сессий созданы")
 
 def create_system_prompts(db: Session):
     """Create system prompts for AI interactions"""
     prompts_data = [
         {
             "name": "default_chat",
-            "content": "You are Big Kahuna Burger's AI HR assistant. Help candidates learn about job opportunities and company culture. Be friendly and professional.",
+            "content": "Вы HR-помощник с искусственным интеллектом Big Kahuna Burger. Помогайте кандидатам узнавать о возможностях трудоустройства и корпоративной культуре. Будьте дружелюбны и профессиональны.",
             "is_active": True
         },
         {
             "name": "cv_analysis",
-            "content": "You are an AI that analyzes CVs for job compatibility. Provide a score from 0-10. Always start your response with 'Score: X/10'.",
+            "content": "Вы ИИ, который анализирует резюме на совместимость с вакансией. Предоставьте оценку от 0 до 10. Всегда начинайте ответ с 'Оценка: X/10'.",
             "is_active": True
         }
     ]
@@ -246,11 +246,11 @@ def create_system_prompts(db: Session):
         db.add(prompt)
     
     db.commit()
-    print("✅ System prompts created")
+    print("✅ Системные промпты созданы")
 
 def seed_database():
     """Main function to seed the database with mock data"""
-    print("🌱 Checking if database needs seeding...")
+    print("🌱 Проверка необходимости наполнения базы данных...")
     
     # Create database tables
     from ..models import models
@@ -259,7 +259,7 @@ def seed_database():
     db = SessionLocal()
     try:
         if check_database_empty(db):
-            print("📊 Database is empty. Seeding with mock data...")
+            print("📊 База данных пуста. Наполнение тестовыми данными...")
             
             create_sample_users(db)
             create_sample_jobs(db)
@@ -267,17 +267,17 @@ def seed_database():
             create_sample_chat_sessions(db)
             create_system_prompts(db)
             
-            print("🎉 Database seeding completed successfully!")
-            print("\n📋 Default accounts created:")
-            print("   HR Admin: hr_admin / secret123")
-            print("   Candidate: candidate1 / secret123")
-            print("   Test User: testuser / test")
-            print("\n✅ Clean mock data ready for testing!")
+            print("🎉 Наполнение базы данных успешно завершено!")
+            print("\n📋 Созданы учетные записи по умолчанию:")
+            print("   HR Админ: hr_admin / pass1234")
+            print("   Кандидат: candidate1 / pass1234") 
+            print("   Тест. польз.: testuser / pass1234")
+            print("\n✅ Чистые тестовые данные готовы к использованию!")
         else:
-            print("📊 Database already contains data. Skipping seed.")
+            print("📊 База данных уже содержит данные. Пропуск наполнения.")
     
     except Exception as e:
-        print(f"❌ Error seeding database: {e}")
+        print(f"❌ Ошибка при наполнении базы данных: {e}")
         db.rollback()
     finally:
         db.close() 

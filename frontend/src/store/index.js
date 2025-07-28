@@ -234,6 +234,45 @@ export default createStore({
         // Don't throw error to allow seeing injection results
         return error.response?.data || { error: 'Search failed' }
       }
+    },
+
+    async deleteApplication({ commit, state }, applicationId) {
+      try {
+        commit('SET_LOADING', true)
+        const response = await axios.delete(`/applications/${applicationId}`)
+        
+        // Update local state by removing the deleted application
+        const updatedApplications = state.applications.filter(app => app.id !== applicationId)
+        commit('SET_APPLICATIONS', updatedApplications)
+        
+        return response.data
+      } catch (error) {
+        commit('SET_ERROR', error.response?.data?.detail || 'Failed to delete application')
+        throw error
+      } finally {
+        commit('SET_LOADING', false)
+      }
+    },
+
+    async bulkDeleteApplications({ commit, state }, { applicationIds, confirmDeletion = false }) {
+      try {
+        commit('SET_LOADING', true)
+        const response = await axios.post('/applications/bulk-delete', {
+          application_ids: applicationIds,
+          confirm_deletion: confirmDeletion
+        })
+        
+        // Update local state by removing deleted applications
+        const updatedApplications = state.applications.filter(app => !applicationIds.includes(app.id))
+        commit('SET_APPLICATIONS', updatedApplications)
+        
+        return response.data
+      } catch (error) {
+        commit('SET_ERROR', error.response?.data?.detail || 'Failed to delete applications')
+        throw error
+      } finally {
+        commit('SET_LOADING', false)
+      }
     }
   },
   

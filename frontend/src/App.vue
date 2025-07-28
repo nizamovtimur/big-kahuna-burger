@@ -14,28 +14,28 @@
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
-              <router-link class="nav-link" to="/jobs">Jobs</router-link>
+              <router-link class="nav-link" to="/jobs">Вакансии</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
-              <router-link class="nav-link" to="/candidate-portal">Portal</router-link>
+              <router-link class="nav-link" to="/candidate-portal">Портал</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated && isHR">
-              <router-link class="nav-link" to="/hr/dashboard">HR Dashboard</router-link>
+              <router-link class="nav-link" to="/hr/dashboard">HR Панель</router-link>
             </li>
           </ul>
           
           <ul class="navbar-nav">
             <li class="nav-item" v-if="!isAuthenticated">
-              <router-link class="nav-link" to="/login">Login</router-link>
+              <router-link class="nav-link" to="/login">Вход</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
               <span class="navbar-text me-3">
-                Welcome, {{ currentUser?.full_name || currentUser?.username }}!
+                Добро пожаловать, {{ currentUser?.full_name || currentUser?.username }}!
               </span>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
               <button class="btn btn-outline-light btn-sm" @click="logout">
-                <i class="fas fa-sign-out-alt"></i> Logout
+                <i class="fas fa-sign-out-alt"></i> Выход
               </button>
             </li>
           </ul>
@@ -56,13 +56,13 @@
         <div class="row">
           <div class="col-md-6">
             <h5><i class="fas fa-hamburger"></i> Big Kahuna Burger</h5>
-            <p>The best burgers in town!</p>
+            <p>Лучшие бургеры в городе!</p>
           </div>
           <div class="col-md-6">
-            <h6>Contact Us</h6>
-            <p>Phone: (555) 123-KAHUNA<br>
-               Email: careers@bigkahuna.com<br>
-               Address: 123 Burger Lane, Food City, FC 12345</p>
+            <h6>Свяжитесь с нами</h6>
+            <p>Телефон: 8 (800) 555-5555<br>
+               Email: hr@bigkahuna.com<br>
+               Адрес: Большая Бронная улица, 29, Москва, 123104, м. Пушкинская</p>
           </div>
         </div>
       </div>

@@ -2,11 +2,13 @@ import os
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from ..database import get_db
+from ..database import get_db, execute_raw_query
 from ..models.models import JobApplication, Job, User
 from ..schemas.schemas import JobApplicationCreate, JobApplication as JobApplicationSchema
 from ..services.auth import get_current_user, get_current_hr_user
 from ..services.openai_service import openai_service
+
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 
@@ -334,4 +336,109 @@ async def bulk_process_applications(
         "processed_applications": processed,
         "action": action,
         "custom_data": custom_data
+    } 
+
+@router.delete("/{application_id}")
+async def delete_application(
+    application_id: int,
+    current_user: User = Depends(get_current_hr_user),
+    db: Session = Depends(get_db)
+):
+    """
+    HARD DELETE application - permanently removes from database.
+    WARNING: This is irreversible! Only for HR users.
+    """
+    application = db.query(JobApplication).filter(
+        JobApplication.id == application_id
+    ).first()
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Store info for response before deletion
+    deleted_info = {
+        "id": application.id,
+        "user_id": application.user_id,
+        "job_id": application.job_id,
+        "applied_at": application.applied_at.isoformat() if application.applied_at else None
+    }
+    
+    # Delete associated files if they exist
+    if application.cv_filename:
+        cv_file_path = os.path.join("uploads", application.cv_filename)
+        if os.path.exists(cv_file_path):
+            try:
+                os.remove(cv_file_path)
+            except Exception as e:
+                print(f"Warning: Could not delete CV file {cv_file_path}: {e}")
+    
+    # HARD DELETE from database
+    db.delete(application)
+    db.commit()
+    
+    return {
+        "message": "Application permanently deleted",
+        "deleted_application": deleted_info,
+        "warning": "This action is irreversible!"
+    }
+
+# Add bulk delete request model
+class BulkDeleteRequest(BaseModel):
+    application_ids: List[int]
+    confirm_deletion: bool = False
+
+@router.post("/bulk-delete")
+async def bulk_delete_applications(
+    request: BulkDeleteRequest,
+    current_user: User = Depends(get_current_hr_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Bulk HARD DELETE applications.
+    WARNING: This will permanently delete multiple applications!
+    """
+    if not request.confirm_deletion:
+        raise HTTPException(
+            status_code=400, 
+            detail="Must confirm deletion by setting confirm_deletion=true"
+        )
+    
+    deleted_applications = []
+    deleted_files = []
+    
+    for app_id in request.application_ids:
+        application = db.query(JobApplication).filter(
+            JobApplication.id == app_id
+        ).first()
+        
+        if application:
+            # Store info before deletion
+            deleted_info = {
+                "id": application.id,
+                "user_id": application.user_id,
+                "job_id": application.job_id,
+                "cv_filename": application.cv_filename
+            }
+            
+            # Delete CV file if exists
+            if application.cv_filename:
+                cv_file_path = os.path.join("uploads", application.cv_filename)
+                if os.path.exists(cv_file_path):
+                    try:
+                        os.remove(cv_file_path)
+                        deleted_files.append(application.cv_filename)
+                    except Exception as e:
+                        print(f"Warning: Could not delete CV file {cv_file_path}: {e}")
+            
+            # Delete from database
+            db.delete(application)
+            deleted_applications.append(deleted_info)
+    
+    db.commit()
+    
+    return {
+        "message": f"Permanently deleted {len(deleted_applications)} applications",
+        "deleted_applications": deleted_applications,
+        "deleted_files": deleted_files,
+        "warning": "This action is irreversible!"
     } 

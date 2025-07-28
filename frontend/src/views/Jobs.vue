@@ -5,9 +5,9 @@
       <div class="row mb-4">
         <div class="col">
           <h1 class="display-6 mb-3">
-            <i class="fas fa-briefcase text-primary"></i> Job Opportunities
+            <i class="fas fa-briefcase text-primary"></i> Возможности трудоустройства
           </h1>
-          <p class="lead">Discover exciting career opportunities at Big Kahuna Burger!</p>
+          <p class="lead">Откройте для себя захватывающие карьерные возможности в Big Kahuna Burger!</p>
         </div>
       </div>
 
@@ -17,7 +17,7 @@
           <div class="card border-primary">
             <div class="card-header bg-primary text-white">
               <h5 class="card-title mb-0">
-                <i class="fas fa-search"></i> Job Search
+                <i class="fas fa-search"></i> Поиск вакансий
               </h5>
             </div>
             <div class="card-body">
@@ -30,25 +30,25 @@
                         class="form-control" 
                         id="searchTerm"
                         v-model="searchForm.search_term"
-                        placeholder="Search jobs..."
+                        placeholder="Поиск вакансий..."
                       >
-                      <label for="searchTerm">Search Term</label>
+                      <label for="searchTerm">Поисковый запрос</label>
                     </div>
                   </div>
                   <div class="col-md-4">
                     <div class="form-floating">
                       <select class="form-select" id="locationFilter">
-                        <option value="">All Locations</option>
-                        <option value="new-york">New York</option>
-                        <option value="los-angeles">Los Angeles</option>
-                        <option value="chicago">Chicago</option>
+                        <option value="">Все локации</option>
+                        <option value="new-york">Нью-Йорк</option>
+                        <option value="los-angeles">Лос-Анджелес</option>
+                        <option value="chicago">Чикаго</option>
                       </select>
-                      <label for="locationFilter">Location</label>
+                      <label for="locationFilter">Местоположение</label>
                     </div>
                   </div>
                   <div class="col-md-2">
                     <button type="submit" class="btn btn-primary h-100 w-100">
-                      <i class="fas fa-search"></i> Search
+                      <i class="fas fa-search"></i> Поиск
                     </button>
                   </div>
                 </div>
@@ -63,7 +63,7 @@
                       v-model="showAdvanced"
                     >
                     <label class="form-check-label" for="advancedSearch">
-                      Advanced Filters
+                      Расширенные фильтры
                     </label>
                   </div>
                   
@@ -72,25 +72,25 @@
                       <div class="col-md-4">
                         <div class="form-floating">
                           <select class="form-select" id="salaryRange">
-                            <option value="">Any Salary</option>
+                            <option value="">Любая зарплата</option>
                             <option value="30-50">$30k - $50k</option>
                             <option value="50-75">$50k - $75k</option>
                             <option value="75-100">$75k - $100k</option>
                             <option value="100+">$100k+</option>
                           </select>
-                          <label for="salaryRange">Salary Range</label>
+                          <label for="salaryRange">Диапазон зарплаты</label>
                         </div>
                       </div>
                       <div class="col-md-4">
                         <div class="form-floating">
                           <select class="form-select" id="experienceLevel">
-                            <option value="">Any Experience</option>
-                            <option value="entry">Entry Level</option>
-                            <option value="mid">Mid Level</option>
-                            <option value="senior">Senior Level</option>
-                            <option value="executive">Executive</option>
+                            <option value="">Любой опыт</option>
+                            <option value="entry">Начальный уровень</option>
+                            <option value="mid">Средний уровень</option>
+                            <option value="senior">Старший уровень</option>
+                            <option value="executive">Руководящий</option>
                           </select>
-                          <label for="experienceLevel">Experience Level</label>
+                          <label for="experienceLevel">Уровень опыта</label>
                         </div>
                       </div>
                       <div class="col-md-4">
@@ -100,9 +100,9 @@
                             class="form-control" 
                             id="customFilter"
                             v-model="searchForm.filters.raw_sql"
-                            placeholder="Custom search criteria"
+                            placeholder="Пользовательские критерии поиска"
                           >
-                          <label for="customFilter">Custom Filter</label>
+                          <label for="customFilter">Пользовательский фильтр</label>
                         </div>
                       </div>
                     </div>
@@ -119,7 +119,7 @@
         <div class="col">
           <div class="card">
             <div class="card-header">
-              <h5>Search Results</h5>
+              <h5>Результаты поиска</h5>
             </div>
             <div class="card-body">
               <pre class="bg-light p-3 rounded"><code>{{ JSON.stringify(searchResults, null, 2) }}</code></pre>
@@ -131,9 +131,9 @@
       <!-- Loading -->
       <div v-if="loading" class="text-center py-4">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">Загрузка...</span>
         </div>
-        <p class="mt-2">Loading jobs...</p>
+        <p class="mt-2">Загрузка вакансий...</p>
       </div>
 
       <!-- Jobs Grid -->
@@ -143,13 +143,13 @@
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-start mb-3">
                 <h5 class="card-title">{{ job.title }}</h5>
-                <span class="badge bg-success">Active</span>
+                <span class="badge bg-success">Активна</span>
               </div>
               
                               <div class="job-description mb-3" v-html="job.description"></div>
               
               <div class="mb-3">
-                <h6 class="text-muted mb-2">Requirements:</h6>
+                <h6 class="text-muted mb-2">Требования:</h6>
                 <div class="small" v-html="job.requirements"></div>
               </div>
               
@@ -171,14 +171,14 @@
                   :to="`/jobs/${job.id}`" 
                   class="btn btn-primary"
                 >
-                  <i class="fas fa-eye"></i> View Details
+                  <i class="fas fa-eye"></i> Подробнее
                 </router-link>
                 <button 
                   v-if="isAuthenticated" 
                   class="btn btn-outline-success"
                   @click="quickApply(job.id)"
                 >
-                  <i class="fas fa-paper-plane"></i> Quick Apply
+                  <i class="fas fa-paper-plane"></i> Быстрая подача
                 </button>
               </div>
             </div>
@@ -189,8 +189,8 @@
       <!-- No Jobs -->
       <div v-if="!loading && jobs.length === 0" class="text-center py-5">
         <i class="fas fa-briefcase display-1 text-muted mb-3"></i>
-        <h3 class="text-muted">No Jobs Available</h3>
-        <p class="text-muted">Check back later for new opportunities!</p>
+        <h3 class="text-muted">Нет доступных вакансий</h3>
+        <p class="text-muted">Загляните позже для поиска новых возможностей!</p>
       </div>
     </div>
   </div>
