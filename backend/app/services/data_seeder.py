@@ -22,31 +22,31 @@ def create_sample_users(db: Session):
             "username": "hr_admin",
             "email": "hr@bigkahuna.ru",
             "password": "pass1234",
-            "full_name": "Анна Петрова",
+            "full_name": "Марселлас Уоллес",
             "is_hr": True,
             "personal_notes": "Главный HR-менеджер Big Kahuna Burger в России"
         },
         {
             "username": "candidate1",
-            "email": "ivan@example.ru",
+            "email": "vincent@example.ru",
             "password": "pass1234",
-            "full_name": "Иван Смирнов",
+            "full_name": "Винсент Вега",
             "is_hr": False,
             "personal_notes": "Опытный повар, ищет возможности карьерного роста"
         },
         {
             "username": "candidate2",
-            "email": "elena@example.ru",
+            "email": "jules@example.ru",
             "password": "pass1234",
-            "full_name": "Елена Васильева",
+            "full_name": "Джулс Уиннфилд",
             "is_hr": False,
             "personal_notes": "Надежный курьер с безупречной репутацией"
         },
         {
             "username": "manager1",
-            "email": "mikhail@bigkahuna.ru",
+            "email": "mia@bigkahuna.ru",
             "password": "pass1234",
-            "full_name": "Михаил Козлов",
+            "full_name": "Мия Уоллес",
             "is_hr": True,
             "personal_notes": "Менеджер ресторана с правами найма сотрудников"
         },
@@ -157,13 +157,6 @@ def create_sample_applications(db: Session):
             "cv_score": 8,
             "additional_answers": {"license_type": "Категория B", "vehicle": "Lada Vesta 2020"}
         },
-        {
-            "user_id": 5,  # testuser
-            "job_id": 4,   # Специалист по работе с клиентами
-            "cover_letter": "Я бы с удовольствием работал в службе поддержки клиентов! У меня отличные коммуникативные навыки и мне нравится помогать людям решать проблемы.",
-            "cv_score": 5,
-            "additional_answers": {"experience": "2 года в клиентской поддержке", "availability": "Неполная занятость"}
-        }
     ]
     
     for app_data in applications_data:
