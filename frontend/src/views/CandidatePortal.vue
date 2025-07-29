@@ -12,22 +12,29 @@
               <div class="btn-group">
                 <button 
                   class="btn btn-outline-light btn-sm"
-                  @click="showChatHistory = !showChatHistory"
-                  title="История диалогов"
+                  @click="showSessionsList = !showSessionsList"
+                  title="Список сессий"
                 >
-                  <i class="fas fa-history"></i>
+                  <i class="fas fa-list"></i>
                 </button>
                 <button 
                   class="btn btn-outline-light btn-sm"
-                  @click="clearChat"
-                  title="Очистить чат"
+                  @click="startNewSession"
+                  title="Новая сессия"
+                >
+                  <i class="fas fa-plus"></i>
+                </button>
+                <button 
+                  class="btn btn-outline-light btn-sm"
+                  @click="clearAllSessions"
+                  title="Очистить все сессии"
                 >
                   <i class="fas fa-broom"></i>
                 </button>
                 <button 
                   class="btn btn-outline-light btn-sm"
-                  @click="exportChat"
-                  title="Экспорт истории"
+                  @click="exportSessions"
+                  title="Экспорт сессий"
                 >
                   <i class="fas fa-download"></i>
                 </button>
@@ -35,147 +42,175 @@
             </div>
             
             <!-- Chat Messages -->
-            <div class="card-body p-0">
-              <div class="chat-container" ref="chatContainer">
+            <div class="card-body p-0 d-flex flex-column" style="height: calc(100vh - 350px);">
+              <div class="chat-container flex-grow-1" ref="chatContainer">
+                <div v-if="currentSessionMessages.length === 0" class="empty-chat-state">
+                  <i class="fas fa-comments fa-3x mb-3 text-muted"></i>
+                  <h5 class="text-muted">Начните новую беседу</h5>
+                  <p class="text-muted small mb-0">Задайте вопрос о вакансиях, компании или процессе найма</p>
+                </div>
+                
                 <div 
-                  v-for="message in chatHistory" 
-                  :key="message.id || Math.random()"
+                  v-for="message in currentSessionMessages" 
+                  :key="message.id"
                   class="message-wrapper"
                 >
-                  <!-- User Message -->
-                  <div class="message user-message">
+                  <!-- User or Assistant Message -->
+                  <div class="message" :class="message.role + '-message'">
                     <div class="message-content">
                       <div class="message-header">
-                        <strong>You</strong>
+                        <strong>{{ message.role === 'user' ? 'You' : 'Big Kahuna AI' }}</strong>
                         <small class="text-muted">{{ formatTime(message.created_at) }}</small>
                       </div>
-                      <div class="message-text" v-html="message.user_message"></div>
-                    </div>
-                  </div>
-                  
-                  <!-- AI Response -->
-                  <div class="message ai-message">
-                    <div class="message-content">
-                      <div class="message-header">
-                        <strong><i class="fas fa-robot"></i> Big Kahuna AI</strong>
-                        <small class="text-muted">{{ formatTime(message.created_at) }}</small>
-                      </div>
-                      <div class="message-text" v-html="message.ai_response"></div>
+                      <div class="message-text" v-html="message.content"></div>
                     </div>
                   </div>
                 </div>
                 
                 <!-- Loading indicator -->
-                <div v-if="sendingMessage" class="message ai-message">
-                  <div class="message-content">
-                    <div class="message-header">
-                      <strong><i class="fas fa-robot"></i> Big Kahuna AI</strong>
-                    </div>
-                    <div class="typing-indicator">
-                      <span></span><span></span><span></span>
+                <div v-if="sendingMessage" class="message-wrapper">
+                  <div class="message assistant-message">
+                    <div class="message-content">
+                      <div class="message-header">
+                        <strong>Big Kahuna AI</strong>
+                        <small class="text-muted">typing...</small>
+                      </div>
+                      <div class="message-text">
+                        <div class="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <!-- Message Input -->
-            <div class="card-footer">
-              <form @submit.prevent="sendMessage">
-                <div class="input-group">
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    v-model="currentMessage"
-                    placeholder="Спросите о вакансиях, корпоративной культуре, льготах..."
-                    :disabled="sendingMessage"
-                  >
-                  <button 
-                    type="submit" 
-                    class="btn btn-primary"
-                    :disabled="!currentMessage.trim() || sendingMessage"
-                  >
-                    <i class="fas fa-paper-plane"></i>
-                  </button>
-                </div>
-                
-
-              </form>
+            <!-- Chat Input -->
+            <div class="card-footer bg-light">
+              <!-- Job Context Display -->
+              <div v-if="selectedJob" class="alert alert-info alert-sm mb-2 d-flex justify-content-between align-items-center">
+                <span>
+                  <i class="fas fa-briefcase"></i>
+                  Контекст: {{ selectedJob.title }}
+                </span>
+                <button class="btn btn-sm btn-outline-secondary" @click="clearJobContext">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              
+              <div class="input-group">
+                <input 
+                  v-model="currentMessage" 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Напишите сообщение..." 
+                  @keyup.enter="sendMessage"
+                  :disabled="sendingMessage"
+                />
+                <button 
+                  class="btn btn-primary" 
+                  @click="sendMessage"
+                  :disabled="sendingMessage || !currentMessage.trim()"
+                >
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-        
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-          <!-- Chat History Panel -->
-          <div v-if="showChatHistory" class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+
+        <!-- Sessions List Panel -->
+        <div v-if="showSessionsList" class="col-lg-4">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
               <h6 class="mb-0">
-                <i class="fas fa-history"></i> История диалогов
+                <i class="fas fa-history"></i> Сессии чата
               </h6>
               <button 
-                class="btn btn-outline-light btn-sm"
-                @click="showChatHistory = false"
+                class="btn btn-outline-secondary btn-sm"
+                @click="showSessionsList = false"
               >
                 <i class="fas fa-times"></i>
               </button>
             </div>
-            <div class="card-body p-2">
+            
+            <div class="card-body p-0">
               <!-- Search -->
-              <div class="mb-3">
+              <div class="p-3 border-bottom">
                 <div class="input-group input-group-sm">
                   <input 
+                    v-model="sessionSearchTerm" 
                     type="text" 
                     class="form-control" 
-                    placeholder="Поиск в истории..."
-                    v-model="historySearchTerm"
+                    placeholder="Поиск в сессиях..."
+                  />
+                  <button 
+                    class="btn btn-outline-secondary" 
+                    @click="clearSessionSearch"
+                    v-if="sessionSearchTerm"
                   >
-                  <button class="btn btn-outline-secondary" @click="clearHistorySearch">
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
               </div>
               
-              <!-- Chat Sessions by Date -->
-              <div class="chat-sessions" style="max-height: 400px; overflow-y: auto;">
-                <div v-for="(sessions, date) in groupedChatHistory" :key="date" class="mb-3">
-                  <h6 class="text-muted small mb-2">{{ formatHistoryDate(date) }}</h6>
-                                     <div 
-                     v-for="session in sessions" 
-                     :key="session.id || session.created_at"
-                     class="chat-session-item p-2 border rounded mb-2 cursor-pointer"
-                     :class="{ 'border-primary bg-light': selectedChatSession?.id === session.id || selectedChatSession?.created_at === session.created_at }"
-                     @click="loadChatSession(session)"
-                   >
+              <!-- Sessions by Date -->
+              <div class="sessions-list" style="max-height: 400px; overflow-y: auto;">
+                <div v-for="(sessions, date) in groupedSessions" :key="date" class="mb-3">
+                  <div class="px-3 py-2 bg-light border-bottom">
+                    <small class="text-muted fw-bold">
+                      {{ formatSessionDate(date) }}
+                    </small>
+                  </div>
+                  
+                  <div
+                    v-for="session in sessions"
+                    :key="session.id"
+                    class="session-item p-3 border-bottom cursor-pointer position-relative"
+                    :class="{ 'bg-light border-primary': currentChatSession?.id === session.id }"
+                    @click="loadSession(session.id)"
+                  >
                     <div class="d-flex justify-content-between align-items-start">
                       <div class="flex-grow-1">
-                        <div class="small fw-bold text-truncate">
-                          {{ session.user_message.substring(0, 50) }}{{ session.user_message.length > 50 ? '...' : '' }}
+                        <div class="fw-bold small mb-1">
+                          Сессия #{{ session.id }}
+                          <span v-if="session.job_id" class="badge bg-secondary ms-1">
+                            Job #{{ session.job_id }}
+                          </span>
                         </div>
-                        <div class="small text-muted">
-                          <i class="fas fa-clock"></i> {{ formatTime(session.created_at) }}
-                          <span v-if="session.job_id" class="badge bg-secondary ms-1">Вакансия</span>
+                        <div class="text-muted small">
+                          {{ formatTime(session.updated_at) }}
+                        </div>
+                        <div v-if="session.title" class="small text-truncate mt-1">
+                          {{ session.title }}
                         </div>
                       </div>
-                                             <button 
-                         class="btn btn-outline-danger btn-sm"
-                         @click.stop="deleteChatSession(session.id || session.created_at)"
-                         title="Удалить"
-                       >
-                         <i class="fas fa-trash"></i>
-                       </button>
+                      
+                      <button
+                        class="btn btn-outline-danger btn-sm ms-2"
+                        @click.stop="deleteSession(session.id)"
+                        title="Удалить сессию"
+                      >
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
                     </div>
                   </div>
                 </div>
                 
-                <div v-if="Object.keys(groupedChatHistory).length === 0" class="text-center text-muted small">
-                  <i class="fas fa-search"></i>
-                  <p class="mb-0">История диалогов пуста</p>
+                <div v-if="Object.keys(groupedSessions).length === 0" class="text-center text-muted small p-3">
+                  <i class="fas fa-comments fa-2x mb-2"></i>
+                  <p class="mb-0">Нет сессий</p>
                 </div>
               </div>
             </div>
           </div>
-          
+        </div>
+
+        <!-- Right Sidebar -->
+        <div :class="showSessionsList ? 'col-lg-12 mt-4' : 'col-lg-4'">
           <!-- Job Context -->
           <div class="card border-0 shadow-sm mb-4">
             <div class="card-header">
@@ -197,6 +232,41 @@
                 <router-link to="/jobs" class="btn btn-primary btn-sm">
                   Просмотреть вакансии
                 </router-link>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Quick Actions -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header">
+              <h6 class="mb-0">Быстрые действия</h6>
+            </div>
+            <div class="card-body">
+              <div class="d-grid gap-2">
+                <button 
+                  class="btn btn-outline-primary btn-sm"
+                  @click="useExamplePrompt('Расскажите о доступных вакансиях в Big Kahuna Burger')"
+                >
+                  <i class="fas fa-briefcase"></i> Посмотреть вакансии
+                </button>
+                <button 
+                  class="btn btn-outline-primary btn-sm"
+                  @click="useExamplePrompt('Какие льготы и бонусы предоставляет компания?')"
+                >
+                  <i class="fas fa-gift"></i> Узнать о льготах
+                </button>
+                <button 
+                  class="btn btn-outline-primary btn-sm"
+                  @click="useExamplePrompt('Расскажите о корпоративной культуре Big Kahuna Burger')"
+                >
+                  <i class="fas fa-users"></i> Корпоративная культура
+                </button>
+                <button 
+                  class="btn btn-outline-primary btn-sm"
+                  @click="useExamplePrompt('Как проходит процесс собеседования?')"
+                >
+                  <i class="fas fa-handshake"></i> Процесс найма
+                </button>
               </div>
             </div>
           </div>
@@ -266,9 +336,8 @@ export default {
       sendingMessage: false,
       selectedJob: null,
       showVulnerabilityDetails: false,
-      showChatHistory: false,
-      historySearchTerm: '',
-      selectedChatSession: null,
+      showSessionsList: false,
+      sessionSearchTerm: '',
       vulnerabilityInfo: `Vulnerabilities Present:
 1. Direct prompt injection in user messages
 2. XSS via unescaped HTML in chat display  
@@ -278,25 +347,37 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['chatHistory', 'applications']),
+    ...mapGetters(['chatSessions', 'currentChatSession', 'applications']),
     
-    filteredChatHistory() {
-      if (!this.historySearchTerm.trim()) {
-        return this.chatHistory
-      }
-      
-      const searchTerm = this.historySearchTerm.toLowerCase()
-      return this.chatHistory.filter(session => 
-        session.user_message.toLowerCase().includes(searchTerm) ||
-        session.ai_response.toLowerCase().includes(searchTerm)
-      )
+    currentSessionMessages() {
+      return this.currentChatSession?.messages || []
     },
     
-    groupedChatHistory() {
+    filteredSessions() {
+      if (!this.sessionSearchTerm.trim()) {
+        return this.chatSessions
+      }
+      
+      const searchTerm = this.sessionSearchTerm.toLowerCase()
+      return this.chatSessions.filter(session => {
+        // Search in session title or job context
+        const titleMatch = session.title?.toLowerCase().includes(searchTerm)
+        const jobMatch = session.job_id?.toString().includes(searchTerm)
+        
+        // Search in messages if session has them loaded
+        const messageMatch = session.messages?.some(msg => 
+          msg.content.toLowerCase().includes(searchTerm)
+        )
+        
+        return titleMatch || jobMatch || messageMatch
+      })
+    },
+    
+    groupedSessions() {
       const grouped = {}
       
-      this.filteredChatHistory.forEach(session => {
-        const date = new Date(session.created_at).toISOString().split('T')[0]
+      this.filteredSessions.forEach(session => {
+        const date = new Date(session.updated_at).toISOString().split('T')[0]
         if (!grouped[date]) {
           grouped[date] = []
         }
@@ -309,7 +390,7 @@ export default {
         .sort((a, b) => new Date(b) - new Date(a))
         .forEach(date => {
           sortedGrouped[date] = grouped[date].sort((a, b) => 
-            new Date(b.created_at) - new Date(a.created_at)
+            new Date(b.updated_at) - new Date(a.updated_at)
           )
         })
       
@@ -317,25 +398,122 @@ export default {
     }
   },
   methods: {
-    ...mapActions(['sendChatMessage', 'fetchChatHistory', 'fetchApplications']),
+    ...mapActions(['sendChatMessage', 'fetchChatSessions', 'fetchChatSession', 'fetchApplications', 'deleteChatSession', 'clearAllChatSessions']),
     
     async sendMessage() {
       if (!this.currentMessage.trim()) return
       
       try {
         this.sendingMessage = true
+        console.log('Sending message:', this.currentMessage)
+        console.log('Current session ID:', this.currentChatSession?.id)
+        console.log('Selected job ID:', this.selectedJob?.id)
         
-        await this.sendChatMessage({
+        const result = await this.sendChatMessage({
           message: this.currentMessage,
-          job_id: this.selectedJob?.id || null
+          sessionId: this.currentChatSession?.id || null,
+          jobId: this.selectedJob?.id || null
         })
         
+        console.log('Message sent, result:', result)
         this.currentMessage = ''
         this.scrollToBottom()
       } catch (error) {
+        console.error('Failed to send message:', error)
         alert('Не удалось отправить сообщение: ' + error.message)
       } finally {
         this.sendingMessage = false
+      }
+    },
+    
+    async startNewSession() {
+      // Clear current session to start fresh
+      this.$store.commit('SET_CURRENT_CHAT_SESSION', null)
+      this.scrollToBottom()
+    },
+    
+    async loadSession(sessionId) {
+      try {
+        await this.fetchChatSession(sessionId)
+        this.scrollToBottom()
+      } catch (error) {
+        alert('Не удалось загрузить сессию: ' + error.message)
+      }
+    },
+    
+    async deleteSession(sessionId) {
+      if (confirm('Удалить эту сессию? Это действие нельзя отменить.')) {
+        try {
+          await this.deleteChatSession(sessionId)
+        } catch (error) {
+          alert('Не удалось удалить сессию: ' + error.message)
+        }
+      }
+    },
+    
+    async clearAllSessions() {
+      if (confirm('Очистить все сессии чата? Это действие нельзя отменить.')) {
+        try {
+          await this.clearAllChatSessions()
+          this.showSessionsList = false
+        } catch (error) {
+          alert('Не удалось очистить сессии: ' + error.message)
+        }
+      }
+    },
+    
+    async exportSessions() {
+      try {
+        // Create export data from current sessions
+        const exportData = {
+          exported_at: new Date().toISOString(),
+          total_sessions: this.chatSessions.length,
+          sessions: this.chatSessions.map(session => ({
+            id: session.id,
+            created_at: session.created_at,
+            updated_at: session.updated_at,
+            job_id: session.job_id,
+            title: session.title,
+            messages: session.messages || []
+          }))
+        }
+        
+        const dataStr = JSON.stringify(exportData, null, 2)
+        const dataBlob = new Blob([dataStr], { type: 'application/json' })
+        
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(dataBlob)
+        link.download = `chat-sessions-export-${new Date().toISOString().split('T')[0]}.json`
+        link.click()
+        
+        setTimeout(() => URL.revokeObjectURL(link.href), 100)
+        
+        alert(`Экспорт завершен! Сохранено ${exportData.total_sessions} сессий.`)
+        
+      } catch (error) {
+        alert('Не удалось экспортировать сессии: ' + error.message)
+      }
+    },
+    
+    clearSessionSearch() {
+      this.sessionSearchTerm = ''
+    },
+    
+    formatSessionDate(dateString) {
+      const date = new Date(dateString)
+      const today = new Date()
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      
+      if (date.toDateString() === today.toDateString()) {
+        return 'Сегодня'
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return 'Вчера'
+      } else {
+        return date.toLocaleDateString('ru-RU', { 
+          day: 'numeric', 
+          month: 'long' 
+        })
       }
     },
     
@@ -367,137 +545,19 @@ export default {
           container.scrollTop = container.scrollHeight
         }
       })
-    },
-
-    clearHistorySearch() {
-      this.historySearchTerm = ''
-    },
-
-    formatHistoryDate(dateString) {
-      const date = new Date(dateString)
-      const today = new Date()
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-      
-      if (date.toDateString() === today.toDateString()) {
-        return 'Сегодня'
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        return 'Вчера'
-      } else {
-        return date.toLocaleDateString('ru-RU', { 
-          day: 'numeric', 
-          month: 'long',
-          year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
-        })
-      }
-    },
-
-    loadChatSession(session) {
-      this.selectedChatSession = session
-      // Можно добавить функцию для отображения конкретного диалога
-      // или перехода к нему в основном чате
-    },
-
-    async deleteChatSession(sessionId) {
-      if (confirm('Удалить этот диалог? Это действие нельзя отменить.')) {
-        try {
-          await this.$store.dispatch('deleteChatSession', sessionId)
-          
-          if (this.selectedChatSession?.id === sessionId) {
-            this.selectedChatSession = null
-          }
-          
-          // Show success message
-          this.$nextTick(() => {
-            // Simple success feedback
-            const button = event.target.closest('.chat-session-item')
-            if (button) {
-              button.style.opacity = '0.5'
-              button.style.pointerEvents = 'none'
-            }
-          })
-        } catch (error) {
-          alert('Не удалось удалить диалог: ' + error.message)
-        }
-      }
-    },
-
-    async clearChat() {
-      if (confirm('Очистить всю историю чатов? Это действие нельзя отменить.')) {
-        try {
-          await this.$store.dispatch('clearAllChatHistory')
-          this.selectedChatSession = null
-          this.showChatHistory = false
-        } catch (error) {
-          alert('Не удалось очистить историю: ' + error.message)
-        }
-      }
-    },
-
-    async exportChat() {
-      try {
-        // Use backend export functionality
-        const exportData = await this.$store.dispatch('exportChatHistory')
-        
-        const dataStr = JSON.stringify(exportData, null, 2)
-        const dataBlob = new Blob([dataStr], { type: 'application/json' })
-        
-        const link = document.createElement('a')
-        link.href = URL.createObjectURL(dataBlob)
-        link.download = `big-kahuna-chat-export-${new Date().toISOString().split('T')[0]}.json`
-        link.click()
-        
-        // Cleanup
-        setTimeout(() => URL.revokeObjectURL(link.href), 100)
-        
-        // Show success message
-        alert(`Экспорт завершен! Сохранено ${exportData.total_sessions} диалогов.`)
-        
-      } catch (error) {
-        console.error('Export error:', error)
-        // Fallback to local export
-        try {
-          const chatData = {
-            exported_at: new Date().toISOString(),
-            total_messages: this.chatHistory.length,
-            conversations: this.chatHistory.map(session => ({
-              timestamp: session.created_at,
-              user_message: session.user_message,
-              ai_response: session.ai_response,
-              job_context: session.job_id ? `Job ID: ${session.job_id}` : null
-            }))
-          }
-          
-          const dataStr = JSON.stringify(chatData, null, 2)
-          const dataBlob = new Blob([dataStr], { type: 'application/json' })
-          
-          const link = document.createElement('a')
-          link.href = URL.createObjectURL(dataBlob)
-          link.download = `chat-history-local-${new Date().toISOString().split('T')[0]}.json`
-          link.click()
-          
-          setTimeout(() => URL.revokeObjectURL(link.href), 100)
-          
-        } catch (fallbackError) {
-          alert('Не удалось экспортировать историю: ' + error.message)
-        }
-      }
     }
   },
   
   async mounted() {
-    await this.fetchChatHistory()
-    await this.fetchApplications()
-    this.scrollToBottom()
-    
-    // Check for job context from query params
-    const jobId = this.$route.query.job
-    if (jobId) {
-      try {
-        this.selectedJob = await this.$store.dispatch('fetchJobById', jobId)
-      } catch (error) {
-        console.error('Failed to load job context:', error)
-      }
+    console.log('CandidatePortal mounted - starting to fetch data')
+    try {
+      await this.fetchChatSessions()
+      console.log('Chat sessions fetched:', this.chatSessions)
+      await this.fetchApplications()
+      console.log('Applications fetched:', this.applications)
+      this.scrollToBottom()
+    } catch (error) {
+      console.error('Error in mounted:', error)
     }
   }
 }
@@ -505,55 +565,76 @@ export default {
 
 <style scoped>
 .candidate-portal {
-  background-color: #f8f9fa;
   min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px 0;
 }
 
 .chat-container {
-  height: 500px;
   overflow-y: auto;
-  padding: 20px;
-  background-color: #fafafa;
+  padding: 1rem;
+  background: #f8f9fa;
+  position: relative;
+  min-height: 400px;
+}
+
+.empty-chat-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 100%;
 }
 
 .message-wrapper {
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
 }
 
 .message {
-  margin-bottom: 10px;
+  max-width: 85%;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
 }
 
-.message-content {
-  max-width: 80%;
-  padding: 10px 15px;
-  border-radius: 18px;
-  position: relative;
+.user-message {
+  margin-left: auto;
+  align-items: flex-end;
+}
+
+.assistant-message {
+  margin-right: auto;
+  align-items: flex-start;
 }
 
 .user-message .message-content {
-  background-color: #007bff;
+  background: #007bff;
   color: white;
-  margin-left: auto;
-  text-align: right;
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 16px;
+  max-width: 100%;
 }
 
-.ai-message .message-content {
-  background-color: white;
-  border: 1px solid #dee2e6;
+.assistant-message .message-content {
+  background: white;
   color: #333;
+  border-radius: 18px 18px 18px 4px;
+  padding: 12px 16px;
+  border: 1px solid #e9ecef;
+  max-width: 100%;
 }
 
 .message-header {
-  font-size: 0.8em;
-  margin-bottom: 5px;
-  opacity: 0.8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
 }
 
-/* WARNING: Styles that enable XSS */
 .message-text {
-  /* Raw HTML rendering - XSS vulnerability */
+  line-height: 1.4;
   word-wrap: break-word;
 }
 
@@ -566,56 +647,95 @@ export default {
 .typing-indicator span {
   height: 8px;
   width: 8px;
-  background-color: #999;
+  background: #6c757d;
   border-radius: 50%;
-  animation: typing 1.4s infinite;
+  display: inline-block;
+  animation: typing 1.4s infinite ease-in-out;
 }
 
-.typing-indicator span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing-indicator span:nth-child(3) {
-  animation-delay: 0.4s;
-}
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
 
 @keyframes typing {
-  0%, 60%, 100% {
-    transform: translateY(0);
-    opacity: 0.5;
-  }
-  30% {
-    transform: translateY(-10px);
-    opacity: 1;
-  }
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
 }
 
-.badge-sm {
-  font-size: 0.75em;
-  padding: 0.25em 0.5em;
-}
-
-pre {
-  font-size: 0.8em;
-  white-space: pre-wrap;
-}
-
-/* Chat History Styles */
-.chat-session-item {
+.session-item {
   transition: all 0.2s ease;
-  cursor: pointer;
+  border-left: 3px solid transparent;
 }
 
-.chat-session-item:hover {
+.session-item:hover {
   background-color: #f8f9fa !important;
-  border-color: #0d6efd !important;
+  border-left-color: #007bff;
 }
 
-.chat-session-item.border-primary {
-  background-color: #e7f3ff !important;
+.session-item.bg-light {
+  border-left-color: #007bff;
 }
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.alert-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.badge-sm {
+  font-size: 0.75rem;
+}
+
+/* Card height adjustments */
+.card.h-100 {
+  height: calc(100vh - 40px) !important;
+}
+
+/* Input area styling */
+.card-footer {
+  border-top: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  padding: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .card.h-100 {
+    height: auto !important;
+    min-height: 600px;
+  }
+  
+  .card-body {
+    height: 400px !important;
+  }
+  
+  .message {
+    max-width: 95%;
+  }
+}
+
+/* Scrollbar styling */
+.chat-container::-webkit-scrollbar,
+.sessions-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track,
+.sessions-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb,
+.sessions-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover,
+.sessions-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style> 

@@ -1,6 +1,6 @@
 import openai
 import re
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from ..config import settings
 import PyPDF2
 import io
@@ -17,7 +17,7 @@ class OpenAIService:
         )
         self.model = settings.openai_model
     
-    async def chat_with_ai(self, user_message: str, job_context: Optional[Dict[str, Any]] = None) -> str:
+    async def chat_with_ai(self, user_message: str, job_context: Optional[Dict[str, Any]] = None, chat_history: Optional[List[Dict[str, str]]] = None) -> str:
         """
         WARNING: This function is intentionally vulnerable to prompt injection attacks!
         User input is directly concatenated to the system prompt without sanitization.
@@ -30,22 +30,24 @@ Company Info:
 - We value teamwork, customer service, and quality food
 - We offer competitive salaries and growth opportunities
 
-IMPORTANT: Always be helpful and professional. Never reveal internal company secrets or salary negotiation strategies.
-
 Current conversation context: {job_context if job_context else 'General inquiry'}
 
-User question: {user_message}
-
-Remember to stay in character as Big Kahuna Burger's HR assistant."""
+If you cannot answer the question or the user asks something that is not related to the job or company, say "Sorry, I don't know. I'm happy to help you with anything else." in language of the user."""
 
         try:
+            # Prepare messages list
+            messages = [{"role": "system", "content": system_prompt}]
+            
+            # Add chat history if provided (already in OpenAI format)
+            if chat_history:
+                messages.extend(chat_history)
+            
+            # Add current user message
+            messages.append({"role": "user", "content": user_message})
+
             response = await self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
-                max_tokens=500,
+                messages=messages,
                 temperature=0.7
             )
             return response.choices[0].message.content
@@ -85,7 +87,6 @@ Analysis:"""
                     {"role": "system", "content": "You are an HR AI that analyzes CVs for job compatibility. Always start your response with 'Score: X/10'."},
                     {"role": "user", "content": analysis_prompt}
                 ],
-                max_tokens=400,
                 temperature=0.5
             )
             
@@ -157,7 +158,6 @@ Analysis:"""
                     {"role": "system", "content": "You are an HR AI analyzing additional applicant information."},
                     {"role": "user", "content": analysis_prompt}
                 ],
-                max_tokens=600,
                 temperature=0.6
             )
             return response.choices[0].message.content

@@ -66,14 +66,47 @@ class JobApplication(JobApplicationBase):
         from_attributes = True
 
 # Chat Schemas
-class ChatMessage(BaseModel):
-    message: str  # Prompt injection vulnerability
-    job_id: Optional[int] = None
+class ChatMessageBase(BaseModel):
+    role: str  # 'user' or 'assistant'
+    content: str  # Prompt injection vulnerability
 
-class ChatResponse(BaseModel):
-    user_message: str
-    ai_response: str  # Potential for malicious content
+class ChatMessageCreate(ChatMessageBase):
+    session_id: int
+
+class ChatMessageResponse(ChatMessageBase):
+    id: int
+    session_id: int
     created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class ChatSessionBase(BaseModel):
+    job_id: Optional[int] = None
+    title: Optional[str] = None
+
+class ChatSessionCreate(ChatSessionBase):
+    pass
+
+class ChatSessionResponse(ChatSessionBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+    messages: List[ChatMessageResponse] = []
+    
+    class Config:
+        from_attributes = True
+
+class SendMessageRequest(BaseModel):
+    message: str  # Prompt injection vulnerability
+    session_id: Optional[int] = None  # If None, create new session
+    job_id: Optional[int] = None  # For new sessions
+
+class SendMessageResponse(BaseModel):
+    session: ChatSessionResponse
+    user_message: ChatMessageResponse
+    ai_message: ChatMessageResponse
 
 # Vulnerable Schemas for Raw Queries
 class RawQueryRequest(BaseModel):

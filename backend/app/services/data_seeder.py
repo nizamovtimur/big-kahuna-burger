@@ -6,7 +6,7 @@ This data is clean and safe - vulnerabilities are demonstrated through the platf
 """
 
 from sqlalchemy.orm import Session
-from ..models.models import User, Job, JobApplication, ChatSession, SystemPrompt
+from ..models.models import User, Job, JobApplication, ChatSession, ChatMessage, SystemPrompt
 from ..services.auth import get_password_hash
 from ..database import SessionLocal, engine
 
@@ -175,7 +175,9 @@ def create_sample_applications(db: Session):
     print("✅ Образцы заявок созданы")
 
 def create_sample_chat_sessions(db: Session):
-    """Create sample chat sessions with realistic conversations"""
+    """Create sample chat sessions with the new structure"""
+    
+    # Chat data with user and AI messages
     chat_data = [
         {
             "user_id": 2,
@@ -204,13 +206,30 @@ def create_sample_chat_sessions(db: Session):
     ]
     
     for chat in chat_data:
+        # Create chat session
         session = ChatSession(
             user_id=chat["user_id"],
             job_id=chat["job_id"],
-            user_message=chat["user_message"],
-            ai_response=chat["ai_response"]
+            title=f"Диалог о {'вакансии #' + str(chat['job_id']) if chat['job_id'] else 'общих вопросах'}"
         )
         db.add(session)
+        db.flush()  # Get session ID without committing
+        
+        # Create user message
+        user_message = ChatMessage(
+            session_id=session.id,
+            role="user",
+            content=chat["user_message"]
+        )
+        db.add(user_message)
+        
+        # Create AI response
+        ai_message = ChatMessage(
+            session_id=session.id,
+            role="assistant",
+            content=chat["ai_response"]
+        )
+        db.add(ai_message)
     
     db.commit()
     print("✅ Образцы чат-сессий созданы")

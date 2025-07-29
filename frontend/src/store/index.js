@@ -20,7 +20,8 @@ export default createStore({
     token: localStorage.getItem('token'),
     jobs: [],
     applications: [],
-    chatHistory: [],
+    chatSessions: [],
+    currentChatSession: null,
     loading: false,
     error: null
   },
@@ -45,11 +46,51 @@ export default createStore({
     SET_APPLICATIONS(state, applications) {
       state.applications = applications
     },
-    SET_CHAT_HISTORY(state, history) {
-      state.chatHistory = history
+    SET_CHAT_SESSIONS(state, sessions) {
+      state.chatSessions = sessions
     },
-    ADD_CHAT_MESSAGE(state, message) {
-      state.chatHistory.push(message)
+    SET_CURRENT_CHAT_SESSION(state, session) {
+      state.currentChatSession = session
+    },
+    ADD_CHAT_SESSION(state, session) {
+      // Add new session to the beginning of the list
+      state.chatSessions.unshift(session)
+    },
+    UPDATE_CHAT_SESSION(state, updatedSession) {
+      const index = state.chatSessions.findIndex(s => s.id === updatedSession.id)
+      if (index !== -1) {
+        state.chatSessions.splice(index, 1, updatedSession)
+      }
+      // Also update current session if it's the same
+      if (state.currentChatSession && state.currentChatSession.id === updatedSession.id) {
+        state.currentChatSession = updatedSession
+      }
+    },
+    ADD_MESSAGE_TO_SESSION(state, { sessionId, userMessage, aiMessage }) {
+      // Add messages to current session if loaded
+      if (state.currentChatSession && state.currentChatSession.id === sessionId) {
+        if (!state.currentChatSession.messages) {
+          state.currentChatSession.messages = []
+        }
+        state.currentChatSession.messages.push(userMessage)
+        state.currentChatSession.messages.push(aiMessage)
+        state.currentChatSession.updated_at = aiMessage.created_at
+      }
+      
+      // Update session in sessions list
+      const sessionIndex = state.chatSessions.findIndex(s => s.id === sessionId)
+      if (sessionIndex !== -1) {
+        state.chatSessions[sessionIndex].updated_at = aiMessage.created_at
+        // Move session to top of list
+        const session = state.chatSessions.splice(sessionIndex, 1)[0]
+        state.chatSessions.unshift(session)
+      }
+    },
+    REMOVE_CHAT_SESSION(state, sessionId) {
+      state.chatSessions = state.chatSessions.filter(s => s.id !== sessionId)
+      if (state.currentChatSession && state.currentChatSession.id === sessionId) {
+        state.currentChatSession = null
+      }
     },
     SET_LOADING(state, loading) {
       state.loading = loading
@@ -126,7 +167,8 @@ export default createStore({
       commit('SET_TOKEN', null)
       commit('SET_USER', null)
       commit('SET_APPLICATIONS', [])
-      commit('SET_CHAT_HISTORY', [])
+      commit('SET_CHAT_SESSIONS', []) // Changed from SET_CHAT_HISTORY to SET_CHAT_SESSIONS
+      commit('SET_CURRENT_CHAT_SESSION', null)
     },
     
     async fetchJobs({ commit }) {
@@ -200,14 +242,32 @@ export default createStore({
       }
     },
     
-    async sendChatMessage({ commit }, { message, job_id }) {
+    async sendChatMessage({ commit }, { message, sessionId = null, jobId = null }) {
       try {
-        const response = await axios.post('/chat/', {
+        const response = await axios.post('/chat/send', {
           message,
-          job_id
+          session_id: sessionId,
+          job_id: jobId
         })
         
-        commit('ADD_CHAT_MESSAGE', response.data)
+        const { session, user_message, ai_message } = response.data
+        
+        // If this is a new session, add it to the list and set as current
+        if (!sessionId) {
+          commit('ADD_CHAT_SESSION', session)
+          commit('SET_CURRENT_CHAT_SESSION', {
+            ...session,
+            messages: []
+          })
+        }
+        
+        // Add messages to the session
+        commit('ADD_MESSAGE_TO_SESSION', { 
+          sessionId: session.id, 
+          userMessage: user_message, 
+          aiMessage: ai_message 
+        })
+        
         return response.data
       } catch (error) {
         commit('SET_ERROR', 'Failed to send message')
@@ -215,27 +275,31 @@ export default createStore({
       }
     },
     
-    async fetchChatHistory({ commit }) {
+    async fetchChatSessions({ commit }) {
       try {
-        const response = await axios.get('/chat/history')
-        commit('SET_CHAT_HISTORY', response.data)
+        const response = await axios.get('/chat/sessions')
+        commit('SET_CHAT_SESSIONS', response.data)
       } catch (error) {
-        commit('SET_ERROR', 'Failed to fetch chat history')
+        commit('SET_ERROR', 'Failed to fetch chat sessions')
+        throw error
+      }
+    },
+    
+    async fetchChatSession({ commit }, sessionId) {
+      try {
+        const response = await axios.get(`/chat/sessions/${sessionId}`)
+        commit('SET_CURRENT_CHAT_SESSION', response.data)
+        return response.data
+      } catch (error) {
+        commit('SET_ERROR', 'Failed to fetch chat session')
         throw error
       }
     },
 
-    async deleteChatSession({ commit, state }, sessionId) {
+    async deleteChatSession({ commit }, sessionId) {
       try {
-        // Call backend API to delete session
-        await axios.delete(`/chat/${sessionId}`)
-        
-        // Update local state
-        const updatedHistory = state.chatHistory.filter(session => 
-          session.id !== sessionId && session.created_at !== sessionId
-        )
-        commit('SET_CHAT_HISTORY', updatedHistory)
-        
+        await axios.delete(`/chat/sessions/${sessionId}`)
+        commit('REMOVE_CHAT_SESSION', sessionId)
         return { message: 'Chat session deleted' }
       } catch (error) {
         commit('SET_ERROR', 'Failed to delete chat session')
@@ -243,24 +307,26 @@ export default createStore({
       }
     },
 
-    async clearAllChatHistory({ commit }) {
+    async clearAllChatSessions({ commit }) {
       try {
-        const response = await axios.delete('/chat/')
-        commit('SET_CHAT_HISTORY', [])
+        const response = await axios.delete('/chat/sessions')
+        commit('SET_CHAT_SESSIONS', [])
+        commit('SET_CURRENT_CHAT_SESSION', null)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', 'Failed to clear chat history')
+        commit('SET_ERROR', 'Failed to clear chat sessions')
         throw error
       }
     },
 
-    async exportChatHistory() {
-      try {
-        const response = await axios.get('/chat/export')
-        return response.data
-      } catch (error) {
-        throw error
-      }
+    // Legacy action for backward compatibility - can be removed later
+    async fetchChatHistory({ dispatch }) {
+      return await dispatch('fetchChatSessions')
+    },
+    
+    // Legacy action for backward compatibility - can be removed later  
+    async clearAllChatHistory({ dispatch }) {
+      return await dispatch('clearAllChatSessions')
     },
     
     // Vulnerable search function - exposes SQL injection endpoint
@@ -320,7 +386,8 @@ export default createStore({
     isHR: state => state.user?.is_hr || false,
     jobs: state => state.jobs,
     applications: state => state.applications,
-    chatHistory: state => state.chatHistory,
+    chatSessions: state => state.chatSessions, // Changed from chatHistory to chatSessions
+    currentChatSession: state => state.currentChatSession,
     loading: state => state.loading,
     error: state => state.error
   }
