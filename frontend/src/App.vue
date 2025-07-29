@@ -13,11 +13,11 @@
         
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav me-auto">
+            <li class="nav-item" v-if="isAuthenticated">
+              <router-link class="nav-link" to="/candidate-portal">Мой HR</router-link>
+            </li>
             <li class="nav-item">
               <router-link class="nav-link" to="/jobs">Вакансии</router-link>
-            </li>
-            <li class="nav-item" v-if="isAuthenticated">
-              <router-link class="nav-link" to="/candidate-portal">Портал</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated && isHR">
               <router-link class="nav-link" to="/hr/dashboard">HR Панель</router-link>

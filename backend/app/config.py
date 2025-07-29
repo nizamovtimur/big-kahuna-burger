@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     secret_key: str = "super_secret_key_that_should_be_random"
     jwt_secret_key: str = "another_weak_secret_for_jwt"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    access_token_expire_minutes: int = 1440
     
     # CORS (Intentionally Permissive)
     cors_origins: list = ["http://localhost:3000"]

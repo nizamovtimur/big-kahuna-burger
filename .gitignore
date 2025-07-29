@@ -142,3 +142,6 @@ celerybeat-schedule
 alembic/versions/*.py
 !alembic/versions/
 alembic.ini 
+
+# LLAMATOR
+artifacts/

@@ -224,6 +224,44 @@ export default createStore({
         throw error
       }
     },
+
+    async deleteChatSession({ commit, state }, sessionId) {
+      try {
+        // Call backend API to delete session
+        await axios.delete(`/chat/${sessionId}`)
+        
+        // Update local state
+        const updatedHistory = state.chatHistory.filter(session => 
+          session.id !== sessionId && session.created_at !== sessionId
+        )
+        commit('SET_CHAT_HISTORY', updatedHistory)
+        
+        return { message: 'Chat session deleted' }
+      } catch (error) {
+        commit('SET_ERROR', 'Failed to delete chat session')
+        throw error
+      }
+    },
+
+    async clearAllChatHistory({ commit }) {
+      try {
+        const response = await axios.delete('/chat/')
+        commit('SET_CHAT_HISTORY', [])
+        return response.data
+      } catch (error) {
+        commit('SET_ERROR', 'Failed to clear chat history')
+        throw error
+      }
+    },
+
+    async exportChatHistory() {
+      try {
+        const response = await axios.get('/chat/export')
+        return response.data
+      } catch (error) {
+        throw error
+      }
+    },
     
     // Vulnerable search function - exposes SQL injection endpoint
     async vulnerableJobSearch({ commit }, searchData) {

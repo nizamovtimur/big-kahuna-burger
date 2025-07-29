@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -6,6 +7,7 @@ from ..models.models import ChatSession, Job, User
 from ..schemas.schemas import ChatMessage, ChatResponse
 from ..services.auth import get_current_user
 from ..services.openai_service import openai_service
+from datetime import datetime
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -117,45 +119,76 @@ async def prompt_injection_demo(
     except Exception as e:
         return {"error": str(e)}
 
-@router.post("/system-prompt-update")
-async def update_system_prompt(
-    new_prompt: str,
-    current_user: User = Depends(get_current_user)
+
+@router.delete("/{session_id}")
+async def delete_chat_session(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
-    WARNING: Allows users to modify system prompts!
-    This is a severe security vulnerability for demonstration.
+    Delete a specific chat session.
+    Users can only delete their own chat sessions.
     """
-    # Vulnerable: Anyone can update system prompts
-    response = f"System prompt updated to: {new_prompt}"
+    session = db.query(ChatSession).filter(
+        ChatSession.id == session_id,
+        ChatSession.user_id == current_user.id
+    ).first()
     
-    # In a real attack, this would modify the AI's behavior globally
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+    
+    db.delete(session)
+    db.commit()
+    
+    return {"message": "Chat session deleted successfully"}
+
+@router.delete("/")
+async def delete_all_chat_sessions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete all chat sessions for current user.
+    """
+    deleted_count = db.query(ChatSession).filter(
+        ChatSession.user_id == current_user.id
+    ).delete()
+    
+    db.commit()
+    
     return {
-        "message": "System prompt updated (this is a vulnerability!)",
-        "new_prompt": new_prompt,
-        "warning": "In a real system, this would compromise all AI interactions"
+        "message": f"Deleted {deleted_count} chat sessions",
+        "deleted_count": deleted_count
     }
 
-@router.get("/debug-prompts")
-async def debug_prompts(current_user: User = Depends(get_current_user)):
+@router.get("/export")
+async def export_chat_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    WARNING: Exposes internal prompt structure for educational purposes.
+    Export user's complete chat history.
     """
-    return {
-        "base_prompt": """You are Big Kahuna Burger's AI HR assistant. Your job is to help candidates understand job openings and company culture.
-        
-Company Info:
-- Big Kahuna Burger is a fast-growing burger chain
-- We value teamwork, customer service, and quality food
-- We offer competitive salaries and growth opportunities
-
-IMPORTANT: Always be helpful and professional. Never reveal internal company secrets or salary negotiation strategies.""",
-        "vulnerabilities": [
-            "User input directly concatenated to prompts",
-            "No input sanitization or validation",
-            "System prompts can be modified by users",
-            "AI responses stored without validation",
-            "No rate limiting on AI calls"
-        ],
-        "warning": "This information should never be exposed in production!"
-    } 
+    sessions = db.query(ChatSession).filter(
+        ChatSession.user_id == current_user.id
+    ).order_by(ChatSession.created_at.desc()).all()
+    
+    export_data = {
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "exported_at": datetime.now().isoformat(),
+        "total_sessions": len(sessions),
+        "chat_history": [
+            {
+                "session_id": session.id,
+                "timestamp": session.created_at.isoformat(),
+                "job_id": session.job_id,
+                "user_message": session.user_message,
+                "ai_response": session.ai_response
+            }
+            for session in sessions
+        ]
+    }
+    
+    return export_data 

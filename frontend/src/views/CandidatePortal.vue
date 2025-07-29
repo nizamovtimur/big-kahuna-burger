@@ -5,10 +5,33 @@
         <!-- Chat Section -->
         <div class="col-lg-8">
           <div class="card h-100 border-0 shadow-sm">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
               <h5 class="mb-0">
-                <i class="fas fa-robot"></i> Чат с ИИ-помощником Big Kahuna
+                <i class="fas fa-robot"></i> Мой HR Помощник - Big Kahuna AI
               </h5>
+              <div class="btn-group">
+                <button 
+                  class="btn btn-outline-light btn-sm"
+                  @click="showChatHistory = !showChatHistory"
+                  title="История диалогов"
+                >
+                  <i class="fas fa-history"></i>
+                </button>
+                <button 
+                  class="btn btn-outline-light btn-sm"
+                  @click="clearChat"
+                  title="Очистить чат"
+                >
+                  <i class="fas fa-broom"></i>
+                </button>
+                <button 
+                  class="btn btn-outline-light btn-sm"
+                  @click="exportChat"
+                  title="Экспорт истории"
+                >
+                  <i class="fas fa-download"></i>
+                </button>
+              </div>
             </div>
             
             <!-- Chat Messages -->
@@ -84,6 +107,75 @@
         
         <!-- Sidebar -->
         <div class="col-lg-4">
+          <!-- Chat History Panel -->
+          <div v-if="showChatHistory" class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+              <h6 class="mb-0">
+                <i class="fas fa-history"></i> История диалогов
+              </h6>
+              <button 
+                class="btn btn-outline-light btn-sm"
+                @click="showChatHistory = false"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="card-body p-2">
+              <!-- Search -->
+              <div class="mb-3">
+                <div class="input-group input-group-sm">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    placeholder="Поиск в истории..."
+                    v-model="historySearchTerm"
+                  >
+                  <button class="btn btn-outline-secondary" @click="clearHistorySearch">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Chat Sessions by Date -->
+              <div class="chat-sessions" style="max-height: 400px; overflow-y: auto;">
+                <div v-for="(sessions, date) in groupedChatHistory" :key="date" class="mb-3">
+                  <h6 class="text-muted small mb-2">{{ formatHistoryDate(date) }}</h6>
+                                     <div 
+                     v-for="session in sessions" 
+                     :key="session.id || session.created_at"
+                     class="chat-session-item p-2 border rounded mb-2 cursor-pointer"
+                     :class="{ 'border-primary bg-light': selectedChatSession?.id === session.id || selectedChatSession?.created_at === session.created_at }"
+                     @click="loadChatSession(session)"
+                   >
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div class="flex-grow-1">
+                        <div class="small fw-bold text-truncate">
+                          {{ session.user_message.substring(0, 50) }}{{ session.user_message.length > 50 ? '...' : '' }}
+                        </div>
+                        <div class="small text-muted">
+                          <i class="fas fa-clock"></i> {{ formatTime(session.created_at) }}
+                          <span v-if="session.job_id" class="badge bg-secondary ms-1">Вакансия</span>
+                        </div>
+                      </div>
+                                             <button 
+                         class="btn btn-outline-danger btn-sm"
+                         @click.stop="deleteChatSession(session.id || session.created_at)"
+                         title="Удалить"
+                       >
+                         <i class="fas fa-trash"></i>
+                       </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-if="Object.keys(groupedChatHistory).length === 0" class="text-center text-muted small">
+                  <i class="fas fa-search"></i>
+                  <p class="mb-0">История диалогов пуста</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <!-- Job Context -->
           <div class="card border-0 shadow-sm mb-4">
             <div class="card-header">
@@ -174,6 +266,9 @@ export default {
       sendingMessage: false,
       selectedJob: null,
       showVulnerabilityDetails: false,
+      showChatHistory: false,
+      historySearchTerm: '',
+      selectedChatSession: null,
       vulnerabilityInfo: `Vulnerabilities Present:
 1. Direct prompt injection in user messages
 2. XSS via unescaped HTML in chat display  
@@ -183,7 +278,43 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['chatHistory', 'applications'])
+    ...mapGetters(['chatHistory', 'applications']),
+    
+    filteredChatHistory() {
+      if (!this.historySearchTerm.trim()) {
+        return this.chatHistory
+      }
+      
+      const searchTerm = this.historySearchTerm.toLowerCase()
+      return this.chatHistory.filter(session => 
+        session.user_message.toLowerCase().includes(searchTerm) ||
+        session.ai_response.toLowerCase().includes(searchTerm)
+      )
+    },
+    
+    groupedChatHistory() {
+      const grouped = {}
+      
+      this.filteredChatHistory.forEach(session => {
+        const date = new Date(session.created_at).toISOString().split('T')[0]
+        if (!grouped[date]) {
+          grouped[date] = []
+        }
+        grouped[date].push(session)
+      })
+      
+      // Sort dates descending (newest first)
+      const sortedGrouped = {}
+      Object.keys(grouped)
+        .sort((a, b) => new Date(b) - new Date(a))
+        .forEach(date => {
+          sortedGrouped[date] = grouped[date].sort((a, b) => 
+            new Date(b.created_at) - new Date(a.created_at)
+          )
+        })
+      
+      return sortedGrouped
+    }
   },
   methods: {
     ...mapActions(['sendChatMessage', 'fetchChatHistory', 'fetchApplications']),
@@ -236,6 +367,121 @@ export default {
           container.scrollTop = container.scrollHeight
         }
       })
+    },
+
+    clearHistorySearch() {
+      this.historySearchTerm = ''
+    },
+
+    formatHistoryDate(dateString) {
+      const date = new Date(dateString)
+      const today = new Date()
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      
+      if (date.toDateString() === today.toDateString()) {
+        return 'Сегодня'
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return 'Вчера'
+      } else {
+        return date.toLocaleDateString('ru-RU', { 
+          day: 'numeric', 
+          month: 'long',
+          year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+        })
+      }
+    },
+
+    loadChatSession(session) {
+      this.selectedChatSession = session
+      // Можно добавить функцию для отображения конкретного диалога
+      // или перехода к нему в основном чате
+    },
+
+    async deleteChatSession(sessionId) {
+      if (confirm('Удалить этот диалог? Это действие нельзя отменить.')) {
+        try {
+          await this.$store.dispatch('deleteChatSession', sessionId)
+          
+          if (this.selectedChatSession?.id === sessionId) {
+            this.selectedChatSession = null
+          }
+          
+          // Show success message
+          this.$nextTick(() => {
+            // Simple success feedback
+            const button = event.target.closest('.chat-session-item')
+            if (button) {
+              button.style.opacity = '0.5'
+              button.style.pointerEvents = 'none'
+            }
+          })
+        } catch (error) {
+          alert('Не удалось удалить диалог: ' + error.message)
+        }
+      }
+    },
+
+    async clearChat() {
+      if (confirm('Очистить всю историю чатов? Это действие нельзя отменить.')) {
+        try {
+          await this.$store.dispatch('clearAllChatHistory')
+          this.selectedChatSession = null
+          this.showChatHistory = false
+        } catch (error) {
+          alert('Не удалось очистить историю: ' + error.message)
+        }
+      }
+    },
+
+    async exportChat() {
+      try {
+        // Use backend export functionality
+        const exportData = await this.$store.dispatch('exportChatHistory')
+        
+        const dataStr = JSON.stringify(exportData, null, 2)
+        const dataBlob = new Blob([dataStr], { type: 'application/json' })
+        
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(dataBlob)
+        link.download = `big-kahuna-chat-export-${new Date().toISOString().split('T')[0]}.json`
+        link.click()
+        
+        // Cleanup
+        setTimeout(() => URL.revokeObjectURL(link.href), 100)
+        
+        // Show success message
+        alert(`Экспорт завершен! Сохранено ${exportData.total_sessions} диалогов.`)
+        
+      } catch (error) {
+        console.error('Export error:', error)
+        // Fallback to local export
+        try {
+          const chatData = {
+            exported_at: new Date().toISOString(),
+            total_messages: this.chatHistory.length,
+            conversations: this.chatHistory.map(session => ({
+              timestamp: session.created_at,
+              user_message: session.user_message,
+              ai_response: session.ai_response,
+              job_context: session.job_id ? `Job ID: ${session.job_id}` : null
+            }))
+          }
+          
+          const dataStr = JSON.stringify(chatData, null, 2)
+          const dataBlob = new Blob([dataStr], { type: 'application/json' })
+          
+          const link = document.createElement('a')
+          link.href = URL.createObjectURL(dataBlob)
+          link.download = `chat-history-local-${new Date().toISOString().split('T')[0]}.json`
+          link.click()
+          
+          setTimeout(() => URL.revokeObjectURL(link.href), 100)
+          
+        } catch (fallbackError) {
+          alert('Не удалось экспортировать историю: ' + error.message)
+        }
+      }
     }
   },
   
@@ -352,5 +598,24 @@ export default {
 pre {
   font-size: 0.8em;
   white-space: pre-wrap;
+}
+
+/* Chat History Styles */
+.chat-session-item {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.chat-session-item:hover {
+  background-color: #f8f9fa !important;
+  border-color: #0d6efd !important;
+}
+
+.chat-session-item.border-primary {
+  background-color: #e7f3ff !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style> 
