@@ -242,13 +242,53 @@ export default createStore({
       }
     },
     
-    async sendChatMessage({ commit }, { message, sessionId = null, jobId = null }) {
+    async sendChatMessage({ commit }, { message, sessionId = null, jobId = null, mode = 'discussion', file = null }) {
       try {
-        const response = await axios.post('/chat/send', {
+        const requestData = {
           message,
           session_id: sessionId,
-          job_id: jobId
-        })
+          job_id: jobId,
+          mode
+        }
+
+        let response
+        
+        if (file && mode === 'apply') {
+          console.log('Sending file via send-with-file endpoint')
+          console.log('File:', file)
+          console.log('Mode:', mode)
+          console.log('JobId:', jobId)
+          console.log('SessionId:', sessionId)
+          
+          // If we have a file, send as multipart/form-data
+          const formData = new FormData()
+          formData.append('message', message || '')
+          // Only append session_id if it's a valid number, not empty string
+          if (sessionId) {
+            formData.append('session_id', sessionId.toString())
+          }
+          // Only append job_id if it's a valid number, not empty string  
+          if (jobId) {
+            formData.append('job_id', jobId.toString())
+          }
+          formData.append('mode', mode)
+          formData.append('cv_file', file)
+          
+          console.log('FormData contents:')
+          for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1])
+          }
+          
+          response = await axios.post('/chat/send-with-file', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          })
+        } else {
+          // Regular JSON request
+          console.log('Sending regular message via /send endpoint', requestData)
+          response = await axios.post('/chat/send', requestData)
+        }
         
         const { session, user_message, ai_message } = response.data
         
@@ -383,12 +423,15 @@ export default createStore({
   getters: {
     isAuthenticated: state => !!state.token,
     currentUser: state => state.user,
+    user: state => state.user,
     isHR: state => state.user?.is_hr || false,
     jobs: state => state.jobs,
+    availableJobs: state => state.jobs, // Alias for jobs for consistency
     applications: state => state.applications,
-    chatSessions: state => state.chatSessions, // Changed from chatHistory to chatSessions
+    chatSessions: state => state.chatSessions,
     currentChatSession: state => state.currentChatSession,
     loading: state => state.loading,
-    error: state => state.error
+    error: state => state.error,
+    apiClient: () => axios // Provide axios instance for direct API calls
   }
 }) 

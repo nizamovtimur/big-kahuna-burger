@@ -230,7 +230,7 @@ export default {
 <style scoped>
 .login-page {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
+  min-height: calc(100vh - 120px);
   padding: 50px 0;
 }
 

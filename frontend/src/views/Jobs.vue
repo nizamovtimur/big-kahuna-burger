@@ -175,10 +175,13 @@
                 </router-link>
                 <button 
                   v-if="isAuthenticated" 
-                  class="btn btn-outline-success"
+                  class="btn"
+                  :class="hasAppliedToJob(job.id) ? 'btn-outline-secondary' : 'btn-outline-success'"
                   @click="quickApply(job.id)"
+                  :disabled="hasAppliedToJob(job.id)"
                 >
-                  <i class="fas fa-paper-plane"></i> Быстрая подача
+                  <i :class="hasAppliedToJob(job.id) ? 'fas fa-check' : 'fas fa-paper-plane'"></i> 
+                  {{ hasAppliedToJob(job.id) ? 'Заявка уже подана' : 'Быстрая подача' }}
                 </button>
               </div>
             </div>
@@ -214,10 +217,10 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['jobs', 'loading', 'isAuthenticated'])
+    ...mapGetters(['jobs', 'loading', 'isAuthenticated', 'applications'])
   },
   methods: {
-    ...mapActions(['fetchJobs', 'vulnerableJobSearch']),
+    ...mapActions(['fetchJobs', 'vulnerableJobSearch', 'fetchApplications']),
     
     async performSearch() {
       try {
@@ -239,12 +242,29 @@ export default {
     },
     
     quickApply(jobId) {
-      this.$router.push(`/jobs/${jobId}`)
+      if (this.hasAppliedToJob(jobId)) {
+        return; // Do nothing if already applied
+      }
+      // Redirect to chat with job context for application
+      this.$router.push({
+        path: '/candidate-portal',
+        query: { 
+          job: jobId,
+          mode: 'apply'
+        }
+      })
+    },
+    
+    hasAppliedToJob(jobId) {
+      return this.applications.some(app => app.job_id === jobId);
     }
   },
   
   async created() {
     await this.fetchJobs()
+    if (this.isAuthenticated) {
+      await this.fetchApplications()
+    }
   }
 }
 </script>
@@ -252,7 +272,7 @@ export default {
 <style scoped>
 .jobs-page {
   background-color: #f8f9fa;
-  min-height: 100vh;
+  min-height: calc(100vh - 120px);
 }
 
 .card {

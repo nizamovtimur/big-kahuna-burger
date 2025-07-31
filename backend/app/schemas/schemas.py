@@ -102,6 +102,7 @@ class SendMessageRequest(BaseModel):
     message: str  # Prompt injection vulnerability
     session_id: Optional[int] = None  # If None, create new session
     job_id: Optional[int] = None  # For new sessions
+    mode: Optional[str] = "discussion"  # "discussion" or "apply"
 
 class SendMessageResponse(BaseModel):
     session: ChatSessionResponse

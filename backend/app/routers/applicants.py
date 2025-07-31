@@ -214,88 +214,6 @@ async def update_application_status(
     
     return {"message": "Application status updated", "new_status": status}
 
-@router.post("/{application_id}/reanalyze")
-async def reanalyze_cv(
-    application_id: int,
-    custom_prompt: str = None,
-    current_user: User = Depends(get_current_hr_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Re-analyze CV with custom prompt.
-    WARNING: Allows custom prompts (severe prompt injection vulnerability!).
-    """
-    application = db.query(JobApplication).filter(
-        JobApplication.id == application_id
-    ).first()
-    
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    
-    # Load CV content
-    file_path = os.path.join("uploads", application.cv_filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="CV file not found")
-    
-    with open(file_path, "rb") as f:
-        cv_content = f.read()
-    
-    cv_text = openai_service.extract_text_from_pdf(cv_content)
-    
-    # Vulnerable: Use custom prompt directly
-    if custom_prompt:
-        # Extremely vulnerable: Custom prompt injection
-        malicious_analysis = f"""
-        {custom_prompt}
-        
-        CV Content:
-        {cv_text}
-        
-        Please provide a score from 0 to 10. Start your response with "Score: X/10".
-        """
-        
-        try:
-            response = await openai_service.client.chat.completions.create(
-                model=openai_service.model,
-                messages=[
-                    {"role": "system", "content": "You are an AI analyzing a CV. Always start your response with 'Score: X/10'."},
-                    {"role": "user", "content": malicious_analysis}
-                ],
-                max_tokens=400
-            )
-            ai_response = response.choices[0].message.content
-            
-            # Extract score using regex (vulnerable to manipulation)
-            import re
-            score_match = re.search(r'[Ss]core:\s*(\d+)(?:/10)?', ai_response)
-            if score_match:
-                new_score = int(score_match.group(1))
-                new_score = min(max(new_score, 0), 10)
-            else:
-                # Fallback: try to find any number
-                number_match = re.search(r'(\d+)', ai_response)
-                if number_match:
-                    new_score = int(number_match.group(1))
-                    new_score = min(max(new_score, 0), 10)
-                else:
-                    new_score = 0
-                    
-        except Exception as e:
-            new_score = 0
-    else:
-        # Use standard analysis (still vulnerable)
-        job = db.query(Job).filter(Job.id == application.job_id).first()
-        new_score = await openai_service.analyze_cv(cv_text, job.description)
-    
-    # Update application
-    application.cv_score = new_score
-    db.commit()
-    
-    return {
-        "message": "CV re-analyzed",
-        "new_score": new_score,
-        "custom_prompt_used": custom_prompt is not None
-    }
 
 @router.post("/bulk-process")
 async def bulk_process_applications(
@@ -442,3 +360,33 @@ async def bulk_delete_applications(
         "deleted_files": deleted_files,
         "warning": "This action is irreversible!"
     } 
+
+@router.get("/check/{job_id}")
+async def check_application_status(
+    job_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Check if current user has already applied to this job.
+    Returns application status or null if not applied.
+    """
+    application = db.query(JobApplication).filter(
+        JobApplication.user_id == current_user.id,
+        JobApplication.job_id == job_id
+    ).first()
+    
+    if application:
+        return {
+            "has_applied": True,
+            "application_id": application.id,
+            "status": application.status,
+            "applied_at": application.applied_at.isoformat() if application.applied_at else None
+        }
+    else:
+        return {
+            "has_applied": False,
+            "application_id": None,
+            "status": None,
+            "applied_at": None
+        } 

@@ -1,65 +1,103 @@
 <template>
   <div class="candidate-portal">
-    <div class="container-fluid">
-      <div class="row">
-        <!-- Chat Section -->
-        <div class="col-lg-8">
-          <div class="card h-100 border-0 shadow-sm">
+    <div class="container-fluid h-100">
+      <div class="row h-100">
+        <!-- Main Chat Section -->
+        <div class="col-lg-8 chat-column">
+          <div class="card h-100 border-0 shadow-sm chat-card">
+            <!-- Chat Header -->
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-              <h5 class="mb-0">
-                <i class="fas fa-robot"></i> Мой HR Помощник - Big Kahuna AI
-              </h5>
+              <div class="d-flex align-items-center">
+                <h5 class="mb-0 me-3">
+                  <i class="fas fa-robot"></i> Мой HR Помощник
+                </h5>
+                <!-- Current Context -->
+                <div v-if="selectedJob" class="badge bg-light text-dark">
+                  <i class="fas fa-briefcase"></i> {{ selectedJob.title }}
+                </div>
+              </div>
+              
+              <!-- Chat Controls -->
               <div class="btn-group">
                 <button 
                   class="btn btn-outline-light btn-sm"
                   @click="showSessionsList = !showSessionsList"
-                  title="Список сессий"
+                  title="История чатов"
                 >
-                  <i class="fas fa-list"></i>
+                  <i class="fas fa-history"></i>
                 </button>
                 <button 
                   class="btn btn-outline-light btn-sm"
                   @click="startNewSession"
-                  title="Новая сессия"
+                  title="Новый чат"
                 >
                   <i class="fas fa-plus"></i>
                 </button>
                 <button 
                   class="btn btn-outline-light btn-sm"
-                  @click="clearAllSessions"
-                  title="Очистить все сессии"
+                  @click="showJobSelector = !showJobSelector"
+                  title="Выбрать вакансию"
                 >
-                  <i class="fas fa-broom"></i>
-                </button>
-                <button 
-                  class="btn btn-outline-light btn-sm"
-                  @click="exportSessions"
-                  title="Экспорт сессий"
-                >
-                  <i class="fas fa-download"></i>
+                  <i class="fas fa-briefcase"></i>
                 </button>
               </div>
             </div>
             
+            <!-- Job Selector Panel -->
+            <div v-if="showJobSelector" class="job-selector-panel border-bottom">
+              <div class="p-3">
+                <h6 class="mb-3">
+                  <i class="fas fa-briefcase"></i> Выбрать вакансию для обсуждения
+                </h6>
+                <div class="row g-2">
+                  <div class="col-md-6" v-for="job in availableJobs" :key="job.id">
+                    <div 
+                      class="job-card p-2 border rounded cursor-pointer"
+                      :class="{ 'border-primary bg-light': selectedJob?.id === job.id }"
+                      @click="selectJob(job)"
+                    >
+                      <div class="fw-bold small">{{ job.title }}</div>
+                      <div class="text-muted small">{{ job.location }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <button 
+                    class="btn btn-outline-secondary btn-sm"
+                    @click="clearJobContext"
+                  >
+                    Очистить контекст
+                  </button>
+                  <button 
+                    class="btn btn-primary btn-sm"
+                    @click="showJobSelector = false"
+                  >
+                    Готово
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             <!-- Chat Messages -->
-            <div class="card-body p-0 d-flex flex-column" style="height: calc(100vh - 350px);">
+            <div class="card-body p-0 d-flex flex-column chat-body">
               <div class="chat-container flex-grow-1" ref="chatContainer">
+                <!-- Empty State -->
                 <div v-if="currentSessionMessages.length === 0" class="empty-chat-state">
                   <i class="fas fa-comments fa-3x mb-3 text-muted"></i>
-                  <h5 class="text-muted">Начните новую беседу</h5>
-                  <p class="text-muted small mb-0">Задайте вопрос о вакансиях, компании или процессе найма</p>
+                  <h5 class="text-muted">{{ getEmptyStateTitle() }}</h5>
+                  <p class="text-muted small mb-0">{{ getEmptyStateSubtitle() }}</p>
                 </div>
                 
+                <!-- Messages -->
                 <div 
                   v-for="message in currentSessionMessages" 
                   :key="message.id"
                   class="message-wrapper"
                 >
-                  <!-- User or Assistant Message -->
                   <div class="message" :class="message.role + '-message'">
                     <div class="message-content">
                       <div class="message-header">
-                        <strong>{{ message.role === 'user' ? 'You' : 'Big Kahuna AI' }}</strong>
+                        <strong>{{ message.role === 'user' ? 'Вы' : 'HR Assistant' }}</strong>
                         <small class="text-muted">{{ formatTime(message.created_at) }}</small>
                       </div>
                       <div class="message-text" v-html="message.content"></div>
@@ -72,8 +110,8 @@
                   <div class="message assistant-message">
                     <div class="message-content">
                       <div class="message-header">
-                        <strong>Big Kahuna AI</strong>
-                        <small class="text-muted">typing...</small>
+                        <strong>HR Assistant</strong>
+                        <small class="text-muted">печатает...</small>
                       </div>
                       <div class="message-text">
                         <div class="typing-indicator">
@@ -90,30 +128,63 @@
             
             <!-- Chat Input -->
             <div class="card-footer bg-light">
-              <!-- Job Context Display -->
-              <div v-if="selectedJob" class="alert alert-info alert-sm mb-2 d-flex justify-content-between align-items-center">
-                <span>
-                  <i class="fas fa-briefcase"></i>
-                  Контекст: {{ selectedJob.title }}
-                </span>
-                <button class="btn btn-sm btn-outline-secondary" @click="clearJobContext">
-                  <i class="fas fa-times"></i>
-                </button>
+              <!-- File Upload Area -->
+              <div v-if="showFileUpload" class="mb-2 p-2 border border-dashed rounded bg-light">
+                <h6 class="mb-2">
+                  <i class="fas fa-file-upload"></i> Загрузить резюме
+                </h6>
+                <input 
+                  type="file" 
+                  class="form-control" 
+                  @change="handleFileUpload"
+                  accept=".pdf,.doc,.docx"
+                  ref="fileInput"
+                />
+                <div class="form-text">
+                  Поддерживаемые форматы: PDF, DOC, DOCX (макс. 10МБ)
+                </div>
               </div>
               
+              <!-- Show attached file -->
+              <div v-if="uploadedFile" class="mb-2 p-2 bg-light border rounded">
+                <div class="d-flex align-items-center text-success">
+                  <i class="fas fa-paperclip me-2"></i>
+                  <span class="small">{{ uploadedFile.name }}</span>
+                  <button 
+                    class="btn btn-sm btn-outline-danger ms-auto"
+                    @click="removeFile"
+                    title="Удалить файл"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div class="small text-muted mt-1">
+                  Файл готов к отправке вместе с сообщением
+                </div>
+              </div>
+              
+              <!-- Message Input -->
               <div class="input-group">
                 <input 
                   v-model="currentMessage" 
                   type="text" 
                   class="form-control" 
-                  placeholder="Напишите сообщение..." 
+                  :placeholder="getInputPlaceholder()" 
                   @keyup.enter="sendMessage"
                   :disabled="sendingMessage"
                 />
                 <button 
+                  v-if="currentMode === 'apply' && !uploadedFile"
+                  class="btn btn-outline-secondary" 
+                  @click="showFileUpload = !showFileUpload"
+                  type="button"
+                >
+                  <i class="fas fa-paperclip"></i>
+                </button>
+                <button 
                   class="btn btn-primary" 
                   @click="sendMessage"
-                  :disabled="sendingMessage || !currentMessage.trim()"
+                  :disabled="sendingMessage || !canSendMessage"
                 >
                   <i class="fas fa-paper-plane"></i>
                 </button>
@@ -122,12 +193,13 @@
           </div>
         </div>
 
-        <!-- Sessions List Panel -->
-        <div v-if="showSessionsList" class="col-lg-4">
-          <div class="card border-0 shadow-sm mb-4">
+        <!-- Sidebar -->
+        <div class="col-lg-4 sidebar-column">
+          <!-- Sessions List (Collapsible) -->
+          <div v-if="showSessionsList" class="card border-0 shadow-sm mb-3 sessions-card">
             <div class="card-header d-flex justify-content-between align-items-center">
               <h6 class="mb-0">
-                <i class="fas fa-history"></i> Сессии чата
+                <i class="fas fa-history"></i> История чатов
               </h6>
               <button 
                 class="btn btn-outline-secondary btn-sm"
@@ -145,7 +217,7 @@
                     v-model="sessionSearchTerm" 
                     type="text" 
                     class="form-control" 
-                    placeholder="Поиск в сессиях..."
+                    placeholder="Поиск..."
                   />
                   <button 
                     class="btn btn-outline-secondary" 
@@ -157,10 +229,10 @@
                 </div>
               </div>
               
-              <!-- Sessions by Date -->
-              <div class="sessions-list" style="max-height: 400px; overflow-y: auto;">
-                <div v-for="(sessions, date) in groupedSessions" :key="date" class="mb-3">
-                  <div class="px-3 py-2 bg-light border-bottom">
+              <!-- Sessions -->
+              <div class="sessions-list">
+                <div v-for="(sessions, date) in groupedSessions" :key="date" class="mb-2">
+                  <div class="px-3 py-1 bg-light border-bottom">
                     <small class="text-muted fw-bold">
                       {{ formatSessionDate(date) }}
                     </small>
@@ -169,14 +241,14 @@
                   <div
                     v-for="session in sessions"
                     :key="session.id"
-                    class="session-item p-3 border-bottom cursor-pointer position-relative"
+                    class="session-item p-2 border-bottom cursor-pointer"
                     :class="{ 'bg-light border-primary': currentChatSession?.id === session.id }"
                     @click="loadSession(session.id)"
                   >
                     <div class="d-flex justify-content-between align-items-start">
                       <div class="flex-grow-1">
                         <div class="fw-bold small mb-1">
-                          Сессия #{{ session.id }}
+                          Чат #{{ session.id }}
                           <span v-if="session.job_id" class="badge bg-secondary ms-1">
                             Job #{{ session.job_id }}
                           </span>
@@ -184,139 +256,130 @@
                         <div class="text-muted small">
                           {{ formatTime(session.updated_at) }}
                         </div>
-                        <div v-if="session.title" class="small text-truncate mt-1">
-                          {{ session.title }}
-                        </div>
                       </div>
                       
                       <button
-                        class="btn btn-outline-danger btn-sm ms-2"
+                        class="btn btn-outline-danger btn-sm"
                         @click.stop="deleteSession(session.id)"
-                        title="Удалить сессию"
+                        title="Удалить"
                       >
                         <i class="fas fa-trash-alt"></i>
                       </button>
                     </div>
                   </div>
                 </div>
-                
-                <div v-if="Object.keys(groupedSessions).length === 0" class="text-center text-muted small p-3">
-                  <i class="fas fa-comments fa-2x mb-2"></i>
-                  <p class="mb-0">Нет сессий</p>
-                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Right Sidebar -->
-        <div :class="showSessionsList ? 'col-lg-12 mt-4' : 'col-lg-4'">
-          <!-- Job Context -->
-          <div class="card border-0 shadow-sm mb-4">
+          
+          <!-- Current Job Context -->
+          <div class="card border-0 shadow-sm mb-3">
             <div class="card-header">
-              <h6 class="mb-0">Контекст вакансии</h6>
+              <h6 class="mb-0">
+                <i class="fas fa-briefcase"></i> Контекст вакансии
+              </h6>
             </div>
             <div class="card-body">
               <div v-if="selectedJob">
                 <h6>{{ selectedJob.title }}</h6>
-                <p class="small text-muted">{{ selectedJob.location }}</p>
-                <button 
-                  class="btn btn-outline-secondary btn-sm"
-                  @click="clearJobContext"
-                >
-                  Очистить контекст
-                </button>
+                <p class="small text-muted mb-2">{{ selectedJob.location }}</p>
+                <div class="small mb-3">
+                  <strong>Режим:</strong> 
+                  <span class="badge" :class="getModeClass()">
+                    {{ getModeText() }}
+                  </span>
+                </div>
+                <div class="d-grid gap-2">
+                  <button 
+                    class="btn btn-outline-primary btn-sm"
+                    @click="changeMode('discussion')"
+                  >
+                    <i class="fas fa-comments"></i> Обсуждение
+                  </button>
+                  <button 
+                    class="btn btn-sm"
+                    :class="hasAppliedToCurrentJob ? 'btn-outline-secondary' : 'btn-outline-success'"
+                    @click="changeMode('apply')"
+                    :disabled="hasAppliedToCurrentJob"
+                  >
+                    <i :class="hasAppliedToCurrentJob ? 'fas fa-check' : 'fas fa-paper-plane'"></i> 
+                    {{ hasAppliedToCurrentJob ? 'Заявка уже подана' : 'Подать заявку' }}
+                  </button>
+                </div>
               </div>
               <div v-else>
-                <p class="text-muted small">Вакансия не выбрана. Обсуждайте общие темы.</p>
-                <router-link to="/jobs" class="btn btn-primary btn-sm">
-                  Просмотреть вакансии
-                </router-link>
+                <p class="text-muted small mb-3">Выберите вакансию для обсуждения</p>
+                <button 
+                  class="btn btn-primary btn-sm w-100"
+                  @click="showJobSelector = true"
+                >
+                  <i class="fas fa-briefcase"></i> Выбрать вакансию
+                </button>
               </div>
             </div>
           </div>
           
           <!-- Quick Actions -->
-          <div class="card border-0 shadow-sm mb-4">
+          <div class="card border-0 shadow-sm mb-3">
             <div class="card-header">
-              <h6 class="mb-0">Быстрые действия</h6>
+              <h6 class="mb-0">
+                <i class="fas fa-bolt"></i> Быстрые действия
+              </h6>
             </div>
             <div class="card-body">
               <div class="d-grid gap-2">
                 <button 
                   class="btn btn-outline-primary btn-sm"
-                  @click="useExamplePrompt('Расскажите о доступных вакансиях в Big Kahuna Burger')"
+                  @click="useExamplePrompt('Расскажите о доступных вакансиях')"
                 >
-                  <i class="fas fa-briefcase"></i> Посмотреть вакансии
+                  <i class="fas fa-list"></i> Список вакансий
                 </button>
                 <button 
                   class="btn btn-outline-primary btn-sm"
-                  @click="useExamplePrompt('Какие льготы и бонусы предоставляет компания?')"
+                  @click="useExamplePrompt('Какие льготы в компании?')"
                 >
-                  <i class="fas fa-gift"></i> Узнать о льготах
+                  <i class="fas fa-gift"></i> Льготы
                 </button>
                 <button 
                   class="btn btn-outline-primary btn-sm"
-                  @click="useExamplePrompt('Расскажите о корпоративной культуре Big Kahuna Burger')"
+                  @click="useExamplePrompt('Как проходит собеседование?')"
                 >
-                  <i class="fas fa-users"></i> Корпоративная культура
-                </button>
-                <button 
-                  class="btn btn-outline-primary btn-sm"
-                  @click="useExamplePrompt('Как проходит процесс собеседования?')"
-                >
-                  <i class="fas fa-handshake"></i> Процесс найма
+                  <i class="fas fa-handshake"></i> Собеседование
                 </button>
               </div>
             </div>
           </div>
           
-          <!-- My Applications -->
-          <div class="card border-0 shadow-sm mb-4">
+          <!-- My Applications Status -->
+          <div class="card border-0 shadow-sm">
             <div class="card-header">
-              <h6 class="mb-0">Мои заявки</h6>
+              <h6 class="mb-0">
+                <i class="fas fa-clipboard-list"></i> Мои заявки
+              </h6>
             </div>
             <div class="card-body">
               <div v-if="applications.length > 0">
                 <div 
-                  v-for="app in applications" 
+                  v-for="app in applications.slice(0, 3)" 
                   :key="app.id"
-                  class="border-bottom pb-2 mb-2 last:border-0"
+                  class="border-bottom pb-2 mb-2"
                 >
                   <div class="d-flex justify-content-between align-items-start">
                     <div>
-                      <h6 class="small mb-1">Заявка #{{ app.id }}</h6>
-                      <p class="small text-muted mb-1">ID вакансии: {{ app.job_id }}</p>
+                      <div class="fw-bold small">Job #{{ app.job_id }}</div>
                       <span class="badge badge-sm" :class="getStatusBadgeClass(app.status)">
-                        {{ app.status }}
+                        {{ getStatusText(app.status) }}
                       </span>
                     </div>
                   </div>
                 </div>
+                <div v-if="applications.length > 3" class="text-center">
+                  <small class="text-muted">И еще {{ applications.length - 3 }}...</small>
+                </div>
               </div>
-              <div v-else class="text-muted small">
-                Заявок пока нет.
+              <div v-else class="text-muted small text-center">
+                Заявок пока нет
               </div>
-            </div>
-          </div>
-          
-          <!-- Chat Help -->
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-info text-white">
-              <h6 class="mb-0">
-                <i class="fas fa-question-circle"></i> Нужна помощь?
-              </h6>
-            </div>
-            <div class="card-body">
-              <p class="small">
-                Наш ИИ-помощник может помочь вам с:
-              </p>
-              <ul class="small mb-0">
-                <li>Описанием вакансий и требованиями</li>
-                <li>Корпоративной культурой и льготами</li>
-                <li>Вопросами о процессе подачи заявок</li>
-                <li>Возможностями карьерного развития</li>
-              </ul>
             </div>
           </div>
         </div>
@@ -335,19 +398,16 @@ export default {
       currentMessage: '',
       sendingMessage: false,
       selectedJob: null,
-      showVulnerabilityDetails: false,
       showSessionsList: false,
       sessionSearchTerm: '',
-      vulnerabilityInfo: `Vulnerabilities Present:
-1. Direct prompt injection in user messages
-2. XSS via unescaped HTML in chat display  
-3. No rate limiting on AI requests
-4. System prompt can be overridden
-5. Sensitive context leaked in responses`
+      showJobSelector: false,
+      showFileUpload: false,
+      uploadedFile: null,
+      currentMode: 'discussion', // 'discussion' or 'apply'
     }
   },
   computed: {
-    ...mapGetters(['chatSessions', 'currentChatSession', 'applications']),
+    ...mapGetters(['chatSessions', 'currentChatSession', 'applications', 'availableJobs']),
     
     currentSessionMessages() {
       return this.currentChatSession?.messages || []
@@ -360,11 +420,8 @@ export default {
       
       const searchTerm = this.sessionSearchTerm.toLowerCase()
       return this.chatSessions.filter(session => {
-        // Search in session title or job context
         const titleMatch = session.title?.toLowerCase().includes(searchTerm)
         const jobMatch = session.job_id?.toString().includes(searchTerm)
-        
-        // Search in messages if session has them loaded
         const messageMatch = session.messages?.some(msg => 
           msg.content.toLowerCase().includes(searchTerm)
         )
@@ -384,7 +441,6 @@ export default {
         grouped[date].push(session)
       })
       
-      // Sort dates descending (newest first)
       const sortedGrouped = {}
       Object.keys(grouped)
         .sort((a, b) => new Date(b) - new Date(a))
@@ -395,29 +451,79 @@ export default {
         })
       
       return sortedGrouped
+    },
+
+    hasAppliedToCurrentJob() {
+      return this.applications.some(app => app.job_id === this.selectedJob?.id);
+    },
+
+    canSendMessage() {
+      // Always require at least a message
+      if (!this.currentMessage.trim()) return false;
+      
+      // For apply mode: 
+      if (this.currentMode === 'apply') {
+        // If user hasn't applied yet, require both message and file
+        if (!this.hasAppliedToCurrentJob) {
+          return this.uploadedFile;
+        }
+        // If user already applied, only message is needed for follow-up
+        return true;
+      }
+      
+      // For other modes: require only message
+      return true;
     }
   },
   methods: {
-    ...mapActions(['sendChatMessage', 'fetchChatSessions', 'fetchChatSession', 'fetchApplications', 'deleteChatSession', 'clearAllChatSessions']),
+    ...mapActions(['sendChatMessage', 'fetchChatSessions', 'fetchChatSession', 'fetchApplications', 'deleteChatSession', 'clearAllChatSessions', 'fetchJobs']),
     
     async sendMessage() {
-      if (!this.currentMessage.trim()) return
+      if (!this.canSendMessage) return
       
       try {
         this.sendingMessage = true
         console.log('Sending message:', this.currentMessage)
         console.log('Current session ID:', this.currentChatSession?.id)
         console.log('Selected job ID:', this.selectedJob?.id)
+        console.log('Current mode:', this.currentMode)
+        console.log('Uploaded file:', this.uploadedFile)
+        console.log('Selected job object:', this.selectedJob)
         
-        const result = await this.sendChatMessage({
+        const messageData = {
           message: this.currentMessage,
           sessionId: this.currentChatSession?.id || null,
-          jobId: this.selectedJob?.id || null
-        })
+          jobId: this.selectedJob?.id || null,
+          mode: this.currentMode
+        }
+        
+        // If we have a file in apply mode, add it to the message
+        if (this.uploadedFile && this.currentMode === 'apply') {
+          messageData.file = this.uploadedFile
+        }
+        
+        const result = await this.sendChatMessage(messageData)
         
         console.log('Message sent, result:', result)
+        
+        // Check if we just submitted an application before clearing uploadedFile
+        const hadUploadedFile = !!this.uploadedFile;
+        const isApplyMode = this.currentMode === 'apply';
+        
         this.currentMessage = ''
+        this.uploadedFile = null
+        this.showFileUpload = false
         this.scrollToBottom()
+        
+        // If we just submitted an application (uploaded file in apply mode), refresh applications
+        if (hadUploadedFile && isApplyMode) {
+          const wasAppliedBefore = this.hasAppliedToCurrentJob;
+          await this.fetchApplications()
+          // Show success notification only for new applications (not follow-up messages)
+          if (!wasAppliedBefore) {
+            alert('✅ Заявка успешно отправлена! Продолжите общение с HR-агентом.')
+          }
+        }
       } catch (error) {
         console.error('Failed to send message:', error)
         alert('Не удалось отправить сообщение: ' + error.message)
@@ -427,7 +533,6 @@ export default {
     },
     
     async startNewSession() {
-      // Clear current session to start fresh
       this.$store.commit('SET_CURRENT_CHAT_SESSION', null)
       this.scrollToBottom()
     },
@@ -523,14 +628,111 @@ export default {
     
     clearJobContext() {
       this.selectedJob = null
+      this.currentMode = 'discussion'
+      this.showJobSelector = false
+      this.showFileUpload = false
+      this.uploadedFile = null
     },
-    
+
+    selectJob(job) {
+      this.selectedJob = job;
+      this.showJobSelector = false;
+      this.currentMode = 'discussion';
+      this.showFileUpload = false;
+      this.uploadedFile = null;
+    },
+
+    changeMode(mode) {
+      this.currentMode = mode;
+      this.showFileUpload = false;
+      this.uploadedFile = null;
+    },
+
+    getModeClass() {
+      switch (this.currentMode) {
+        case 'discussion': return 'bg-primary text-white';
+        case 'apply': return 'bg-success text-white';
+        default: return 'bg-secondary';
+      }
+    },
+
+    getModeText() {
+      switch (this.currentMode) {
+        case 'discussion': return 'Обсуждение';
+        case 'apply': return 'Подача заявки';
+        default: return 'Неизвестный режим';
+      }
+    },
+
+    getEmptyStateTitle() {
+      if (this.selectedJob) {
+        if (this.currentMode === 'apply') {
+          return 'Подача заявки';
+        } else {
+          return 'Обсуждение вакансии';
+        }
+      }
+      return 'Начните новую беседу';
+    },
+
+    getEmptyStateSubtitle() {
+      if (this.selectedJob) {
+        if (this.currentMode === 'apply') {
+          return 'Прикрепите резюме и расскажите о себе';
+        } else {
+          return 'Задайте вопрос о вакансии: ' + this.selectedJob.title;
+        }
+      }
+      return 'Выберите вакансию или задайте общий вопрос';
+    },
+
+    getInputPlaceholder() {
+      if (this.currentMode === 'apply') {
+        // If user already applied, they can send follow-up messages
+        if (this.hasAppliedToCurrentJob) {
+          return 'Отвечайте на вопросы HR-агента...';
+        }
+        // If user hasn't applied yet
+        if (this.uploadedFile) {
+          return 'Резюме прикреплено! Напишите сопроводительное письмо для отправки...';
+        } else {
+          return 'Для подачи заявки напишите сопроводительное письмо и прикрепите резюме...';
+        }
+      }
+      return 'Напишите сообщение...';
+    },
+
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.uploadedFile = file;
+        this.showFileUpload = false;
+        console.log('File attached:', file.name);
+        // File is just attached, not sent automatically
+        // User must write a message and send manually
+      }
+    },
+
+    removeFile() {
+      this.uploadedFile = null;
+      this.$refs.fileInput.value = '';
+    },
+
     getStatusBadgeClass(status) {
       switch (status) {
-        case 'approved': return 'bg-success'
-        case 'rejected': return 'bg-danger'
-        case 'pending': return 'bg-warning'
-        default: return 'bg-secondary'
+        case 'approved': return 'bg-success';
+        case 'rejected': return 'bg-danger';
+        case 'pending': return 'bg-warning';
+        default: return 'bg-secondary';
+      }
+    },
+
+    getStatusText(status) {
+      switch (status) {
+        case 'approved': return 'Одобрено';
+        case 'rejected': return 'Отклонено';
+        case 'pending': return 'Ожидается';
+        default: return status;
       }
     },
     
@@ -545,19 +747,58 @@ export default {
           container.scrollTop = container.scrollHeight
         }
       })
+    },
+
+    async processQueryParams() {
+      const { job, mode, application_id } = this.$route.query;
+      
+      if (job) {
+        // Find job in available jobs
+        const jobData = this.availableJobs.find(j => j.id == job);
+        if (jobData) {
+          this.selectedJob = jobData;
+        }
+      }
+      
+      if (mode) {
+        this.currentMode = mode;
+      }
+      
+      // If it's apply mode, show file upload
+      if (mode === 'apply') {
+        this.showFileUpload = true;
+      }
     }
   },
   
   async mounted() {
     console.log('CandidatePortal mounted - starting to fetch data')
     try {
-      await this.fetchChatSessions()
-      console.log('Chat sessions fetched:', this.chatSessions)
-      await this.fetchApplications()
-      console.log('Applications fetched:', this.applications)
+      await Promise.all([
+        this.fetchChatSessions(),
+        this.fetchApplications(),
+        this.fetchJobs()
+      ])
+      
+      console.log('Data fetched:', {
+        sessions: this.chatSessions,
+        applications: this.applications,
+        jobs: this.availableJobs
+      })
+      
+      // Process query parameters after data is loaded
+      await this.processQueryParams()
+      
       this.scrollToBottom()
     } catch (error) {
       console.error('Error in mounted:', error)
+    }
+  },
+
+  watch: {
+    '$route.query': {
+      handler: 'processQueryParams',
+      deep: true
     }
   }
 }
@@ -565,9 +806,38 @@ export default {
 
 <style scoped>
 .candidate-portal {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px 0;
+  min-height: calc(100vh - 120px);
+  background-color: #f8f9fa;
+  padding: 0;
+}
+
+.h-100 {
+  min-height: calc(100vh - 120px) !important;
+}
+
+.chat-column {
+  display: flex;
+  flex-direction: column;
+  padding: 15px 10px 15px 15px;
+}
+
+.sidebar-column {
+  display: flex;
+  flex-direction: column;
+  padding: 15px 15px 15px 10px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.chat-card {
+  background-color: #f8f9fa !important;
+}
+
+.chat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
 }
 
 .chat-container {
@@ -575,16 +845,19 @@ export default {
   padding: 1rem;
   background: #f8f9fa;
   position: relative;
-  min-height: 400px;
+  flex: 1;
+  min-height: 0;
 }
 
 .empty-chat-state {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   width: 100%;
+  min-height: 200px;
+  padding: 2rem;
 }
 
 .message-wrapper {
@@ -661,6 +934,29 @@ export default {
   40% { transform: scale(1); opacity: 1; }
 }
 
+.job-selector-panel {
+  background: #f8f9fa !important;
+  border-top: 1px solid #dee2e6;
+}
+
+.job-card {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.job-card:hover {
+  background-color: #e9ecef !important;
+}
+
+.sessions-card {
+  max-height: 400px;
+}
+
+.sessions-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
 .session-item {
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
@@ -679,63 +975,79 @@ export default {
   cursor: pointer;
 }
 
-.alert-sm {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-}
-
 .badge-sm {
   font-size: 0.75rem;
 }
 
-/* Card height adjustments */
-.card.h-100 {
-  height: calc(100vh - 40px) !important;
+.card {
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.btn {
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
 }
 
 /* Input area styling */
 .card-footer {
   border-top: 1px solid #dee2e6;
-  background-color: #f8f9fa;
-  padding: 1rem;
+  background-color: #f8f9fa !important;
+  padding: 0.75rem;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .card.h-100 {
-    height: auto !important;
-    min-height: 600px;
+  .chat-column,
+  .sidebar-column {
+    padding: 10px;
   }
   
-  .card-body {
-    height: 400px !important;
+  .chat-body {
+    flex: 1;
   }
   
   .message {
     max-width: 95%;
   }
+  
+  .sidebar-column {
+    max-height: none;
+  }
 }
 
 /* Scrollbar styling */
 .chat-container::-webkit-scrollbar,
-.sessions-list::-webkit-scrollbar {
+.sessions-list::-webkit-scrollbar,
+.sidebar-column::-webkit-scrollbar {
   width: 6px;
 }
 
 .chat-container::-webkit-scrollbar-track,
-.sessions-list::-webkit-scrollbar-track {
+.sessions-list::-webkit-scrollbar-track,
+.sidebar-column::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
 .chat-container::-webkit-scrollbar-thumb,
-.sessions-list::-webkit-scrollbar-thumb {
+.sessions-list::-webkit-scrollbar-thumb,
+.sidebar-column::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
 .chat-container::-webkit-scrollbar-thumb:hover,
-.sessions-list::-webkit-scrollbar-thumb:hover {
+.sessions-list::-webkit-scrollbar-thumb:hover,
+.sidebar-column::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 </style> 

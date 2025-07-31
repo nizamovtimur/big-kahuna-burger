@@ -51,35 +51,55 @@
         </div>
 
         <div class="col-lg-4">
-          <!-- Apply Section -->
+          <!-- Action Section -->
           <div v-if="isAuthenticated" class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-success text-white">
+            <div class="card-header bg-gradient-primary text-white">
               <h5 class="mb-0">
-                <i class="fas fa-paper-plane"></i> Подать заявку на эту позицию
+                <i class="fas fa-rocket"></i> Взаимодействие с вакансией
               </h5>
             </div>
             <div class="card-body">
+              <!-- Job Discussion Button -->
               <button 
-                class="btn btn-success w-100 mb-3"
-                @click="showApplicationForm = true"
-                :disabled="hasApplied"
+                class="btn btn-outline-primary w-100 mb-3"
+                @click="startJobDiscussion"
               >
-                <i class="fas fa-file-upload"></i>
-                {{ hasApplied ? 'Уже подана заявка' : 'Подать заявку' }}
+                <i class="fas fa-comments"></i>
+                Задать вопрос о вакансии
+              </button>
+              
+              <!-- Application Status -->
+              <div v-if="applicationStatus.has_applied" class="alert alert-info mb-3">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-check-circle me-2"></i>
+                  <div>
+                    <strong>Заявка подана</strong>
+                    <br>
+                    <small>Статус: {{ getStatusText(applicationStatus.status) }}</small>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Application Button -->
+              <button 
+                class="btn w-100 mb-3"
+                @click="handleApplicationAction"
+                :class="applicationStatus.has_applied ? 'btn-outline-secondary' : 'btn-success'"
+                :disabled="applicationStatus.has_applied"
+              >
+                <i :class="applicationStatus.has_applied ? 'fas fa-check' : 'fas fa-paper-plane'"></i>
+                {{ applicationStatus.has_applied ? 'Заявка уже подана' : 'Откликнуться в чате' }}
               </button>
               
               <hr>
               
-              <h6>Быстрый чат с ИИ</h6>
-              <p class="small text-muted mb-3">
-                Спросите нашего ИИ-помощника об этой позиции
-              </p>
-              <router-link 
-                :to="`/candidate-portal?job=${job.id}`" 
-                class="btn btn-outline-primary w-100"
-              >
-                <i class="fas fa-robot"></i> Обсудить эту вакансию
-              </router-link>
+              <div class="text-center">
+                <small class="text-muted">
+                  {{ applicationStatus.has_applied 
+                    ? 'Продолжите общение с HR-агентом в чате' 
+                    : 'Отправьте резюме и пообщайтесь с HR-агентом' }}
+                </small>
+              </div>
             </div>
           </div>
 
@@ -88,7 +108,7 @@
             <div class="card-body text-center">
               <i class="fas fa-lock fa-3x text-muted mb-3"></i>
               <h5>Требуется вход</h5>
-              <p class="text-muted">Пожалуйста, войдите, чтобы подать заявку на эту позицию</p>
+              <p class="text-muted">Пожалуйста, войдите, чтобы взаимодействовать с вакансией</p>
               <router-link to="/login" class="btn btn-primary">
                 <i class="fas fa-sign-in-alt"></i> Войти
               </router-link>
@@ -119,80 +139,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Application Modal -->
-      <div v-if="showApplicationForm" class="modal d-block" style="background-color: rgba(0,0,0,0.5)">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Подать заявку на {{ job?.title }}</h5>
-              <button 
-                type="button" 
-                class="btn-close" 
-                @click="showApplicationForm = false"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <form @submit.prevent="handleSubmitApplication">
-                <div class="mb-3">
-                  <label for="coverLetter" class="form-label">Сопроводительное письмо *</label>
-                  <textarea 
-                    class="form-control" 
-                    id="coverLetter"
-                    v-model="applicationForm.cover_letter"
-                    rows="5"
-                    required
-                    placeholder="Расскажите, почему вас интересует эта позиция..."
-                  ></textarea>
-                  <div class="form-text text-muted">
-                    <small>Поделитесь своей мотивацией и релевантным опытом для этой роли</small>
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="cvFile" class="form-label">Резюме *</label>
-                  <input 
-                    type="file" 
-                    class="form-control" 
-                    id="cvFile"
-                    @change="handleFileUpload"
-                    accept=".pdf,.doc,.docx"
-                    required
-                  >
-                  <div class="form-text text-muted">
-                    <small>Поддерживаемые форматы: PDF, DOC, DOCX (макс. 10МБ)</small>
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="additionalInfo" class="form-label">Дополнительная информация</label>
-                  <textarea 
-                    class="form-control" 
-                    id="additionalInfo"
-                    v-model="applicationForm.additional_info"
-                    rows="3"
-                    placeholder="Любая дополнительная информация, которой хотели бы поделиться..."
-                  ></textarea>
-                </div>
-
-                <div class="d-grid gap-2">
-                  <button type="submit" class="btn btn-success" :disabled="submitting">
-                    <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
-                    <i class="fas fa-paper-plane"></i> Подать заявку
-                  </button>
-                  <button 
-                    type="button" 
-                    class="btn btn-secondary" 
-                    @click="showApplicationForm = false"
-                  >
-                    Отменить
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -207,25 +153,26 @@ export default {
     return {
       job: null,
       loading: true,
-      showApplicationForm: false,
-      submitting: false,
-      hasApplied: false,
-      applicationForm: {
-        cover_letter: '',
-        additional_info: '',
-        cv_file: null
+      applicationStatus: {
+        has_applied: false,
+        application_id: null,
+        status: null,
+        applied_at: null
       }
     }
   },
   computed: {
-    ...mapGetters(['isAuthenticated'])
+    ...mapGetters(['isAuthenticated', 'user', 'apiClient'])
   },
   methods: {
-    ...mapActions(['fetchJobById', 'submitApplication']),
+    ...mapActions(['fetchJobById']),
     
     async loadJob() {
       try {
         this.job = await this.fetchJobById(this.id)
+        if (this.isAuthenticated) {
+          await this.checkApplicationStatus()
+        }
       } catch (error) {
         console.error('Failed to load job:', error)
         this.$router.push('/jobs')
@@ -234,39 +181,56 @@ export default {
       }
     },
     
-    handleFileUpload(event) {
-      this.applicationForm.cv_file = event.target.files[0]
+    async checkApplicationStatus() {
+      try {
+        const response = await this.apiClient.get(`/applications/check/${this.id}`)
+        this.applicationStatus = response.data
+      } catch (error) {
+        console.error('Failed to check application status:', error)
+      }
     },
     
-    async handleSubmitApplication() {
-      if (!this.applicationForm.cv_file) {
-        alert('Пожалуйста, выберите файл резюме')
-        return
-      }
-      
-      try {
-        this.submitting = true
-        
-        const applicationData = {
-          job_id: this.job.id,
-          cover_letter: this.applicationForm.cover_letter,
-          additional_answers: {
-            additional_info: this.applicationForm.additional_info
-          },
-          cv_file: this.applicationForm.cv_file
+    startJobDiscussion() {
+      // Redirect to chat with job context for discussion
+      this.$router.push({
+        path: '/candidate-portal',
+        query: { 
+          job: this.job.id,
+          mode: 'discussion'
         }
-        
-        await this.submitApplication(applicationData)
-        
-        this.showApplicationForm = false
-        this.hasApplied = true
-        
-        alert('Заявка успешно подана!')
-      } catch (error) {
-        alert('Не удалось подать заявку: ' + error.message)
-      } finally {
-        this.submitting = false
+      })
+    },
+    
+    handleApplicationAction() {
+      if (this.applicationStatus.has_applied) {
+        // Go to existing chat
+        this.$router.push({
+          path: '/candidate-portal',
+          query: { 
+            job: this.job.id,
+            mode: 'application',
+            application_id: this.applicationStatus.application_id
+          }
+        })
+      } else {
+        // Start application process in chat
+        this.$router.push({
+          path: '/candidate-portal',
+          query: { 
+            job: this.job.id,
+            mode: 'apply'
+          }
+        })
       }
+    },
+    
+    getStatusText(status) {
+      const statusMap = {
+        'pending': 'На рассмотрении',
+        'approved': 'Одобрена',
+        'rejected': 'Отклонена'
+      }
+      return statusMap[status] || status
     },
     
     formatDate(dateString) {
@@ -283,7 +247,7 @@ export default {
 <style scoped>
 .job-detail-page {
   background-color: #f8f9fa;
-  min-height: 100vh;
+  min-height: calc(100vh - 120px);
 }
 
 /* WARNING: Styles that allow XSS */
@@ -292,11 +256,30 @@ export default {
   line-height: 1.6;
 }
 
-.modal {
-  display: block;
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
 }
 
 .card {
   border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.btn {
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.alert {
+  border: none;
+  border-radius: 10px;
 }
 </style> 
