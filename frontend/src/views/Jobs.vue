@@ -23,7 +23,7 @@
             <div class="card-body">
               <form @submit.prevent="performSearch">
                 <div class="row g-3">
-                  <div class="col-md-6">
+                  <div class="col-md-8">
                     <div class="form-floating">
                       <input 
                         type="text" 
@@ -35,98 +35,25 @@
                       <label for="searchTerm">Поисковый запрос</label>
                     </div>
                   </div>
-                  <div class="col-md-4">
-                    <div class="form-floating">
-                      <select class="form-select" id="locationFilter">
-                        <option value="">Все локации</option>
-                        <option value="new-york">Нью-Йорк</option>
-                        <option value="los-angeles">Лос-Анджелес</option>
-                        <option value="chicago">Чикаго</option>
-                      </select>
-                      <label for="locationFilter">Местоположение</label>
-                    </div>
-                  </div>
                   <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary h-100 w-100">
+                    <button type="submit" class="btn btn-primary h-100 w-100" style="background-color: #0d6efd; border-color: #0d6efd;">
                       <i class="fas fa-search"></i> Поиск
                     </button>
                   </div>
-                </div>
-                
-                <!-- Advanced Filters -->
-                <div class="mt-3">
-                  <div class="form-check">
-                    <input 
-                      class="form-check-input" 
-                      type="checkbox" 
-                      id="advancedSearch"
-                      v-model="showAdvanced"
-                    >
-                    <label class="form-check-label" for="advancedSearch">
-                      Расширенные фильтры
-                    </label>
-                  </div>
-                  
-                  <div v-if="showAdvanced" class="mt-3 p-3 bg-light border rounded">
-                    <div class="row g-3">
-                      <div class="col-md-4">
-                        <div class="form-floating">
-                          <select class="form-select" id="salaryRange">
-                            <option value="">Любая зарплата</option>
-                            <option value="30-50">$30k - $50k</option>
-                            <option value="50-75">$50k - $75k</option>
-                            <option value="75-100">$75k - $100k</option>
-                            <option value="100+">$100k+</option>
-                          </select>
-                          <label for="salaryRange">Диапазон зарплаты</label>
-                        </div>
-                      </div>
-                      <div class="col-md-4">
-                        <div class="form-floating">
-                          <select class="form-select" id="experienceLevel">
-                            <option value="">Любой опыт</option>
-                            <option value="entry">Начальный уровень</option>
-                            <option value="mid">Средний уровень</option>
-                            <option value="senior">Старший уровень</option>
-                            <option value="executive">Руководящий</option>
-                          </select>
-                          <label for="experienceLevel">Уровень опыта</label>
-                        </div>
-                      </div>
-                      <div class="col-md-4">
-                        <div class="form-floating">
-                          <input 
-                            type="text" 
-                            class="form-control" 
-                            id="customFilter"
-                            v-model="searchForm.filters.raw_sql"
-                            placeholder="Пользовательские критерии поиска"
-                          >
-                          <label for="customFilter">Пользовательский фильтр</label>
-                        </div>
-                      </div>
-                    </div>
+                  <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-secondary h-100 w-100" @click="resetSearch">
+                      <i class="fas fa-times"></i> Сброс
+                    </button>
                   </div>
                 </div>
+
               </form>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Search Results -->
-      <div v-if="searchResults" class="row mb-4">
-        <div class="col">
-          <div class="card">
-            <div class="card-header">
-              <h5>Результаты поиска</h5>
-            </div>
-            <div class="card-body">
-              <pre class="bg-light p-3 rounded"><code>{{ JSON.stringify(searchResults, null, 2) }}</code></pre>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       <!-- Loading -->
       <div v-if="loading" class="text-center py-4">
@@ -207,13 +134,8 @@ export default {
   data() {
     return {
       searchForm: {
-        search_term: '',
-        filters: {
-          raw_sql: ''
-        }
-      },
-      searchResults: null,
-      showAdvanced: false
+        search_term: ''
+      }
     }
   },
   computed: {
@@ -230,15 +152,23 @@ export default {
           filters: {}
         }
         
-        // Add raw SQL if provided (extremely dangerous!)
-        if (this.showAdvanced && this.searchForm.filters.raw_sql) {
-          searchData.filters.raw_condition = this.searchForm.filters.raw_sql
-        }
+        const searchResults = await this.vulnerableJobSearch(searchData)
         
-        this.searchResults = await this.vulnerableJobSearch(searchData)
+        // Update jobs list with search results
+        if (searchResults && searchResults.results) {
+          this.$store.commit('SET_JOBS', searchResults.results)
+        }
       } catch (error) {
         console.error('Search failed:', error)
       }
+    },
+    
+    async resetSearch() {
+      // Clear search form
+      this.searchForm.search_term = ''
+      
+      // Reload all jobs
+      await this.fetchJobs()
     },
     
     quickApply(jobId) {

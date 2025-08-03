@@ -197,30 +197,7 @@ export default createStore({
       }
     },
     
-    async submitApplication({ commit }, applicationData) {
-      try {
-        commit('SET_LOADING', true)
-        const formData = new FormData()
-        
-        formData.append('job_id', applicationData.job_id)
-        formData.append('cover_letter', applicationData.cover_letter)
-        formData.append('additional_answers', JSON.stringify(applicationData.additional_answers || {}))
-        formData.append('cv_file', applicationData.cv_file)
-        
-        const response = await axios.post('/applications/', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        })
-        
-        return response.data
-      } catch (error) {
-        commit('SET_ERROR', error.response?.data?.detail || 'Application submission failed')
-        throw error
-      } finally {
-        commit('SET_LOADING', false)
-      }
-    },
+
     
     async fetchApplications({ commit }) {
       try {
@@ -254,11 +231,7 @@ export default createStore({
         let response
         
         if (file && mode === 'apply') {
-          console.log('Sending file via send-with-file endpoint')
-          console.log('File:', file)
-          console.log('Mode:', mode)
-          console.log('JobId:', jobId)
-          console.log('SessionId:', sessionId)
+          
           
           // If we have a file, send as multipart/form-data
           const formData = new FormData()
@@ -274,10 +247,7 @@ export default createStore({
           formData.append('mode', mode)
           formData.append('cv_file', file)
           
-          console.log('FormData contents:')
-          for (let pair of formData.entries()) {
-            console.log(pair[0] + ': ' + pair[1])
-          }
+          
           
           response = await axios.post('/chat/send-with-file', formData, {
             headers: {
@@ -285,8 +255,7 @@ export default createStore({
             }
           })
         } else {
-          // Regular JSON request
-          console.log('Sending regular message via /send endpoint', requestData)
+                  // Regular JSON request
           response = await axios.post('/chat/send', requestData)
         }
         

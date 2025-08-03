@@ -1,89 +1,19 @@
+
 import os
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db, execute_raw_query
 from ..models.models import JobApplication, Job, User
-from ..schemas.schemas import JobApplicationCreate, JobApplication as JobApplicationSchema
+from ..schemas.schemas import JobApplication as JobApplicationSchema
 from ..services.auth import get_current_user, get_current_hr_user
-from ..services.openai_service import openai_service
+
 
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 
-@router.post("/", response_model=JobApplicationSchema)
-async def submit_application(
-    job_id: int = Form(...),
-    cover_letter: str = Form(...),
-    additional_answers: str = Form(None),
-    cv_file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Submit job application with CV upload.
-    WARNING: Contains multiple vulnerabilities:
-    1. XSS in cover_letter and additional_answers
-    2. Indirect prompt injection through PDF content (affects CV scoring)
-    3. Unrestricted file upload
-    """
-    # Check if job exists
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    # Check if user already applied
-    existing_app = db.query(JobApplication).filter(
-        JobApplication.user_id == current_user.id,
-        JobApplication.job_id == job_id
-    ).first()
-    if existing_app:
-        raise HTTPException(status_code=400, detail="Already applied to this job")
-    
-    # Save uploaded file (vulnerable - no validation!)
-    upload_dir = "uploads"
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    file_path = os.path.join(upload_dir, f"{current_user.id}_{job_id}_{cv_file.filename}")
-    
-    # Vulnerable: No file type validation, size limits, or malware scanning
-    with open(file_path, "wb") as buffer:
-        content = await cv_file.read()
-        buffer.write(content)
-    
-    # Extract text from PDF (vulnerable to malicious content)
-    cv_text = openai_service.extract_text_from_pdf(content)
-    
-    # Analyze CV with AI (indirect prompt injection vulnerability!)
-    cv_score = await openai_service.analyze_cv(cv_text, job.description)
-    
-    # Parse additional answers (XSS vulnerability)
-    additional_data = {}
-    if additional_answers:
-        try:
-            # Vulnerable: Eval-like parsing without validation
-            import json
-            additional_data = json.loads(additional_answers)
-        except:
-            additional_data = {"raw_input": additional_answers}
-    
-    # Create application
-    application = JobApplication(
-        user_id=current_user.id,
-        job_id=job_id,
-        cover_letter=cover_letter,  # XSS vulnerability
-        cv_filename=cv_file.filename,
-        cv_score=cv_score,  # CV score from AI analysis (0-10)
-        additional_answers=additional_data,  # XSS vulnerability
-        status="pending"
-    )
-    
-    db.add(application)
-    db.commit()
-    db.refresh(application)
-    
-    return application
+
 
 @router.get("/", response_model=List[JobApplicationSchema])
 async def get_my_applications(
@@ -159,28 +89,7 @@ async def get_all_applications(
         print(f"Error in HR applications endpoint: {str(e)}")
         return {"error": str(e), "applications": []}
 
-@router.get("/{application_id}", response_model=JobApplicationSchema)
-async def get_application(
-    application_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get specific application.
-    WARNING: Returns unsanitized content and CV scores from potentially manipulated analysis.
-    """
-    application = db.query(JobApplication).filter(
-        JobApplication.id == application_id
-    ).first()
-    
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    
-    # Vulnerable: No proper authorization check
-    if not current_user.is_hr and application.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    return application
+
 
 @router.put("/{application_id}/status")
 async def update_application_status(
@@ -215,46 +124,7 @@ async def update_application_status(
     return {"message": "Application status updated", "new_status": status}
 
 
-@router.post("/bulk-process")
-async def bulk_process_applications(
-    action: str,
-    application_ids: List[int],
-    custom_data: dict = None,
-    current_user: User = Depends(get_current_hr_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Bulk process applications.
-    WARNING: Vulnerable to mass assignment and injection attacks.
-    """
-    processed = []
-    
-    for app_id in application_ids:
-        application = db.query(JobApplication).filter(
-            JobApplication.id == app_id
-        ).first()
-        
-        if application:
-            if action == "approve":
-                application.status = "approved"
-            elif action == "reject":
-                application.status = "rejected"
-            elif action == "custom":
-                # Vulnerable: Apply custom data without validation
-                if custom_data:
-                    for key, value in custom_data.items():
-                        if hasattr(application, key):
-                            setattr(application, key, value)
-            
-            processed.append(app_id)
-    
-    db.commit()
-    
-    return {
-        "processed_applications": processed,
-        "action": action,
-        "custom_data": custom_data
-    } 
+ 
 
 @router.delete("/{application_id}")
 async def delete_application(

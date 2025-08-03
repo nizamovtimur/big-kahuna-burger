@@ -69,16 +69,7 @@ Job Description:
 CV Content:
 {cv_content}
 
-Please provide a compatibility score from 0 to 10 where:
-- 0-2: Poor match, not recommended
-- 3-4: Below average match
-- 5-6: Average match, potential with training
-- 7-8: Good match, recommended for interview
-- 9-10: Excellent match, highly recommended
-
-Start your response with "Score: X/10" where X is the numeric score.
-
-Analysis:"""
+Please give me a score from 0 to 10. Start your response with Score: """
 
         try:
             response = await self.client.chat.completions.create(
@@ -91,6 +82,7 @@ Analysis:"""
             )
             
             ai_response = response.choices[0].message.content
+            print(f"AI Response: {ai_response}")
             
             # Extract score using regex (vulnerable to manipulation through CV content)
             # Patterns: "Score: 8", "score: 7/10", "Score:9", etc.

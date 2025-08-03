@@ -65,76 +65,11 @@ async def get_job(job_id: int, db: Session = Depends(get_db)):
             "job_id": job_id
         })
 
-@router.post("/", response_model=JobSchema)
-async def create_job(
-    job: JobCreate, 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_hr_user)
-):
-    """
-    Create a new job posting.
-    WARNING: Stores raw HTML content without sanitization (XSS vulnerability).
-    """
-    db_job = Job(
-        title=job.title,
-        # Vulnerable: Raw HTML stored without sanitization
-        description=job.description,
-        requirements=job.requirements,
-        location=job.location,
-        salary_range=job.salary_range,
-        additional_info=job.additional_info,
-        created_by=current_user.id
-    )
-    
-    db.add(db_job)
-    db.commit()
-    db.refresh(db_job)
-    
-    return db_job
 
-@router.put("/{job_id}", response_model=JobSchema)
-async def update_job(
-    job_id: int,
-    job: JobCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_hr_user)
-):
-    """
-    Update a job posting.
-    WARNING: Updates without proper sanitization (XSS vulnerability).
-    """
-    db_job = db.query(Job).filter(Job.id == job_id).first()
-    if not db_job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    # Vulnerable: Direct assignment without sanitization
-    db_job.title = job.title
-    db_job.description = job.description
-    db_job.requirements = job.requirements
-    db_job.location = job.location
-    db_job.salary_range = job.salary_range
-    db_job.additional_info = job.additional_info
-    
-    db.commit()
-    db.refresh(db_job)
-    
-    return db_job
 
-@router.delete("/{job_id}")
-async def delete_job(
-    job_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_hr_user)
-):
-    """Deactivate a job posting"""
-    db_job = db.query(Job).filter(Job.id == job_id).first()
-    if not db_job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    db_job.is_active = False
-    db.commit()
-    
-    return {"message": "Job deactivated successfully"}
+
+
+
 
 @router.post("/search")
 async def vulnerable_job_search(request: SearchRequest, db: Session = Depends(get_db)):
@@ -172,92 +107,8 @@ async def vulnerable_job_search(request: SearchRequest, db: Session = Depends(ge
             "message": "SQL query failed - check for injection attempts"
         }
 
-@router.get("/by-location/{location}")
-async def get_jobs_by_location_vulnerable(location: str, db: Session = Depends(get_db)):
-    """
-    WARNING: Vulnerable to SQL injection through location parameter.
-    """
-    # Vulnerable: Direct string interpolation
-    query = f"SELECT * FROM jobs WHERE location = '{location}' AND is_active = true"
-    
-    try:
-        results = execute_raw_query(query)
-        return {"jobs": [dict(row._mapping) for row in results], "query_executed": query}
-    except Exception as e:
-        return {"error": str(e), "query": query}
 
-@router.post("/bulk-update")
-async def bulk_update_jobs(
-    job_ids: List[int],
-    updates: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_hr_user)
-):
-    """
-    Bulk update jobs with vulnerable implementation.
-    WARNING: Allows arbitrary field updates without validation.
-    """
-    updated_jobs = []
-    
-    for job_id in job_ids:
-        job = db.query(Job).filter(Job.id == job_id).first()
-        if job:
-            # Vulnerable: Apply updates without validation
-            for field, value in updates.items():
-                if hasattr(job, field):
-                    setattr(job, field, value)
-            updated_jobs.append(job.id)
-    
-    db.commit()
-    
-    return {
-        "message": f"Updated {len(updated_jobs)} jobs",
-        "updated_job_ids": updated_jobs
-    }
 
-@router.get("/admin/stats")
-async def get_job_statistics(
-    user_role: str = "candidate", 
-    min_salary: str = "0",
-    db: Session = Depends(get_db)
-):
-    """
-    WARNING: Administrative endpoint with multiple SQL injection vulnerabilities!
-    Demonstrates UNION-based, Boolean-based, and error-based SQL injection.
-    """
-    try:
-        # Multiple vulnerable parameters
-        base_query = f"""
-        SELECT 
-            COUNT(*) as total_jobs,
-            AVG(CAST(SUBSTRING(salary_range FROM '[0-9]+') AS INTEGER)) as avg_salary,
-            location,
-            title
-        FROM jobs 
-        WHERE is_active = true 
-        AND salary_range LIKE '%{min_salary}%'
-        """
-        
-        # Additional vulnerable filter based on user role
-        if user_role == "hr":
-            query = base_query + f" AND created_by IN (SELECT id FROM users WHERE is_hr = true)"
-        else:
-            query = base_query + f" AND title LIKE '%{user_role}%'"
-            
-        query += " GROUP BY location, title ORDER BY total_jobs DESC"
-        
-        results = execute_raw_query(query)
-        return {
-            "statistics": [dict(row._mapping) for row in results],
-            "query_executed": query,
-            "parameters": {
-                "user_role": user_role,
-                "min_salary": min_salary
-            }
-        }
-    except Exception as e:
-        return {
-            "error": str(e), 
-            "query": query,
-            "hint": "Try UNION SELECT or boolean-based injection techniques"
-        } 
+
+
+ 

@@ -463,11 +463,11 @@ export default {
       
       // For apply mode: 
       if (this.currentMode === 'apply') {
-        // If user hasn't applied yet, require both message and file
-        if (!this.hasAppliedToCurrentJob) {
-          return this.uploadedFile;
+        // If user hasn't applied yet AND no file attached, require file
+        if (!this.hasAppliedToCurrentJob && !this.uploadedFile) {
+          return false;
         }
-        // If user already applied, only message is needed for follow-up
+        // If user already applied OR has file attached, allow message
         return true;
       }
       
@@ -506,24 +506,23 @@ export default {
         
         console.log('Message sent, result:', result)
         
-        // Check if we just submitted an application before clearing uploadedFile
+        // Check if we just submitted an application
         const hadUploadedFile = !!this.uploadedFile;
         const isApplyMode = this.currentMode === 'apply';
         
         this.currentMessage = ''
         this.uploadedFile = null
-        this.showFileUpload = false
-        this.scrollToBottom()
         
-        // If we just submitted an application (uploaded file in apply mode), refresh applications
+        // If we sent a file in apply mode, refresh applications to update hasAppliedToCurrentJob
         if (hadUploadedFile && isApplyMode) {
-          const wasAppliedBefore = this.hasAppliedToCurrentJob;
-          await this.fetchApplications()
-          // Show success notification only for new applications (not follow-up messages)
-          if (!wasAppliedBefore) {
-            alert('✅ Заявка успешно отправлена! Продолжите общение с HR-агентом.')
+          try {
+            await this.fetchApplications();
+          } catch (error) {
+            console.error('Failed to refresh applications:', error);
           }
         }
+        this.showFileUpload = false
+        this.scrollToBottom()
       } catch (error) {
         console.error('Failed to send message:', error)
         alert('Не удалось отправить сообщение: ' + error.message)
@@ -694,9 +693,9 @@ export default {
         }
         // If user hasn't applied yet
         if (this.uploadedFile) {
-          return 'Резюме прикреплено! Напишите сопроводительное письмо для отправки...';
+          return 'Резюме прикреплено! Напишите сопроводительное письмо и отправьте...';
         } else {
-          return 'Для подачи заявки напишите сопроводительное письмо и прикрепите резюме...';
+          return 'Прикрепите резюме и напишите сопроводительное письмо...';
         }
       }
       return 'Напишите сообщение...';
@@ -780,11 +779,7 @@ export default {
         this.fetchJobs()
       ])
       
-      console.log('Data fetched:', {
-        sessions: this.chatSessions,
-        applications: this.applications,
-        jobs: this.availableJobs
-      })
+
       
       // Process query parameters after data is loaded
       await this.processQueryParams()
@@ -812,13 +807,15 @@ export default {
 }
 
 .h-100 {
-  min-height: calc(100vh - 120px) !important;
+  height: calc(100vh - 120px) !important;
+  max-height: calc(100vh - 120px) !important;
 }
 
 .chat-column {
   display: flex;
   flex-direction: column;
   padding: 15px 10px 15px 15px;
+  height: calc(100vh - 120px);
 }
 
 .sidebar-column {
@@ -831,6 +828,9 @@ export default {
 
 .chat-card {
   background-color: #f8f9fa !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .chat-body {
@@ -838,6 +838,8 @@ export default {
   display: flex;
   flex-direction: column;
   background: #f8f9fa;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chat-container {
@@ -847,6 +849,7 @@ export default {
   position: relative;
   flex: 1;
   min-height: 0;
+  max-height: 100%;
 }
 
 .empty-chat-state {

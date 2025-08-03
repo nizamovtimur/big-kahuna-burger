@@ -272,8 +272,5 @@ export default {
   border-radius: 0.25rem;
 }
 
-/* WARNING: CSS that could be exploited by XSS */
-.user-content {
-  /* This allows raw HTML rendering - XSS vulnerability */
-}
+
 </style> 
