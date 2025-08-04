@@ -184,13 +184,29 @@
               <div class="mt-3" v-if="selectedApplication.additional_answers">
                 <h6>Дополнительная информация</h6>
                 <div class="border rounded p-3 bg-light">
-                  <pre>{{ JSON.stringify(selectedApplication.additional_answers, null, 2) }}</pre>
+                  <!-- VULNERABILITY: XSS through additional_answers (educational purposes) -->
+                  <div v-for="(value, key) in selectedApplication.additional_answers" :key="key" class="mb-2">
+                    <strong>{{ key }}:</strong> 
+                    <div class="mt-1">
+                      <!-- XSS vulnerability: renders HTML if value is string, JSON if object -->
+                      <span v-if="isString(value)" v-html="value"></span>
+                      <pre v-else class="bg-white p-2 rounded border small">{{ formatValue(value) }}</pre>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div class="mt-3" v-if="selectedApplication.cv_filename">
                 <h6>Файл резюме</h6>
                 <p><i class="fas fa-file-pdf text-danger"></i> {{ selectedApplication.cv_filename }}</p>
+              </div>
+
+              <div class="mt-3" v-if="selectedApplication.feedback">
+                <h6>Обратная связь от HR</h6>
+                <div class="border rounded p-3 bg-light">
+                  <!-- VULNERABILITY: XSS through feedback (educational purposes) -->
+                  <div v-html="selectedApplication.feedback"></div>
+                </div>
               </div>
             </div>
             <div class="modal-footer">
@@ -285,6 +301,18 @@ export default {
   },
   methods: {
     ...mapActions(['logout', 'deleteApplication', 'bulkDeleteApplications']),
+    
+    // Helper methods for displaying additional_answers with XSS vulnerability
+    isString(value) {
+      return typeof value === 'string'
+    },
+    
+    formatValue(value) {
+      if (typeof value === 'object' && value !== null) {
+        return JSON.stringify(value, null, 2)
+      }
+      return String(value)
+    },
     
          async fetchApplications() {
        await this.$store.dispatch('fetchAllApplications')
