@@ -1,10 +1,10 @@
 import os
-from typing import Optional, Dict, Any
+from typing import Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from fastapi import HTTPException, UploadFile
-from ..models.models import JobApplication, Job, User, ChatSession
+from ..models.models import JobApplication, Job, User
 from .openai_service import openai_service
 
 

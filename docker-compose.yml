@@ -3,15 +3,20 @@ services:
     image: postgres:15
     container_name: big_kahuna_db
     environment:
-      POSTGRES_USER: hr_platform
+      POSTGRES_USER: big_kahuna_hr
       POSTGRES_PASSWORD: vulnerable_password_123
       POSTGRES_DB: big_kahuna_hr
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - hr_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "big_kahuna_hr"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+      start_interval: 5s
 
   backend:
     build: ./backend
@@ -20,7 +25,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-your_openai_api_key_here}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4.1-mini}
-      - DATABASE_URL=postgresql://hr_platform:vulnerable_password_123@db:5432/big_kahuna_hr
+      - DATABASE_URL=postgresql://big_kahuna_hr:vulnerable_password_123@db:5432/big_kahuna_hr
       - SECRET_KEY=super_secret_key_that_should_be_random
       - JWT_SECRET_KEY=another_weak_secret_for_jwt
       - ENVIRONMENT=development
@@ -28,10 +33,9 @@ services:
     volumes:
       - ./backend:/app
       - ./uploads:/app/uploads
-    ports:
-      - "8000:8000"
     depends_on:
-      - db
+      db:
+          condition: service_healthy
     networks:
       - hr_network
 
@@ -43,8 +47,6 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    ports:
-      - "3000:3000"
     networks:
       - hr_network
 
