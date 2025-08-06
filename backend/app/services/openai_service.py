@@ -56,26 +56,27 @@ If you cannot answer the question or the user asks something that is not related
     
     async def analyze_cv(self, cv_content: str, job_description: str) -> int:
         """
-        WARNING: This function is vulnerable to indirect prompt injection!
-        PDF content is directly included in the prompt without validation.
+        Analyze CV against job requirements with indirect prompt injection protection.
         Returns a CV score (0-10) parsed from AI response using regex.
         """
-        # Vulnerable: CV content (potentially malicious) is directly inserted into prompt
-        analysis_prompt = f"""Analyze the following CV against the job requirements and provide a compatibility score.
+        system_prompt = """You are an HR AI that analyzes CVs for job compatibility. Your role is strictly limited to CV analysis."""
+        ¢ = f"""TASK: Analyze CV compatibility with job requirements.
 
-Job Description:
+=== JOB REQUIREMENTS ===
 {job_description}
+=== END JOB REQUIREMENTS ===
 
-CV Content:
+=== CV CONTENT TO ANALYZE ===
 {cv_content}
+=== END CV CONTENT ===
 
-Please give me a score from 0 to 10. Start your response with Score: """
+Response format required: Start with "Score: X/10" where X is your numerical assessment."""
 
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are an HR AI that analyzes CVs for job compatibility. Always start your response with 'Score: X/10'."},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": analysis_prompt}
                 ],
                 temperature=0.5
