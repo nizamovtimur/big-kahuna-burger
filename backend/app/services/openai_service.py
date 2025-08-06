@@ -60,7 +60,7 @@ If you cannot answer the question or the user asks something that is not related
         Returns a CV score (0-10) parsed from AI response using regex.
         """
         system_prompt = """You are an HR AI that analyzes CVs for job compatibility. Your role is strictly limited to CV analysis."""
-        ¢ = f"""TASK: Analyze CV compatibility with job requirements.
+        analysis_prompt = f"""TASK: Analyze CV compatibility with job requirements.
 
 === JOB REQUIREMENTS ===
 {job_description}
