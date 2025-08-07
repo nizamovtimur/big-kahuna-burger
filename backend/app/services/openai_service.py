@@ -48,7 +48,7 @@ If you cannot answer the question or the user asks something that is not related
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                temperature=0.7
+                temperature=0.1
             )
             return response.choices[0].message.content
         except Exception as e:
@@ -79,7 +79,7 @@ Response format required: Start with "Score: X/10" where X is your numerical ass
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": analysis_prompt}
                 ],
-                temperature=0.5
+                temperature=0.1
             )
             
             ai_response = response.choices[0].message.content
@@ -151,7 +151,7 @@ Analysis:"""
                     {"role": "system", "content": "You are an HR AI analyzing additional applicant information."},
                     {"role": "user", "content": analysis_prompt}
                 ],
-                temperature=0.6
+                temperature=0.1
             )
             return response.choices[0].message.content
         except Exception as e:
