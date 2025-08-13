@@ -17,43 +17,8 @@ class ApplicationService:
     def __init__(self):
         self.upload_dir = "uploads"
         os.makedirs(self.upload_dir, exist_ok=True)
-    
-    async def create_application_from_file(
-        self,
-        db: Session,
-        user: User,
-        job_id: int,
-        cv_file: UploadFile,
-        cover_letter: str = "",
-        additional_answers: Optional[dict] = None
-    ) -> JobApplication:
-        """
-        Create job application from uploaded file.
-        Handles file upload, text extraction, CV scoring, and database storage.
-        """
-        # Check if job exists
-        job = db.query(Job).filter(Job.id == job_id).first()
-        if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
-        
-        # Check if user already applied
-        existing_app = self.get_existing_application(db, user.id, job_id)
-        if existing_app:
-            raise HTTPException(status_code=400, detail="Already applied to this job")
-        
-        # Save uploaded file and extract content
-        file_path, cv_content = await self._save_and_extract_file(cv_file, user.id, job_id)
-        
-        # Analyze CV
-        cv_score = await openai_service.analyze_cv(cv_content, job.description)
-        
-        # Create application
-        application = self._create_application_record(
-            db, user.id, job_id, cv_file.filename, cv_score, cover_letter, additional_answers
-        )
-        
-        return application
-    
+
+   
     async def create_application_from_content(
         self,
         db: Session,
