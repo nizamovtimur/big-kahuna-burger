@@ -124,7 +124,7 @@ class AIAgentService:
             ),
             agent=hr_info_agent,
             expected_output=(
-                "A concise but informative answer addressing the user's request, possibly including operational steps if asked."
+                "A concise but informative answer in user's language addressing the user's request, possibly including operational steps if asked."
             ),
         )
         qa_result = await run_task(hr_info_agent, qa_task)
@@ -209,7 +209,7 @@ class AIAgentService:
                 ),
                 agent=interviewer_agent,
                 expected_output=(
-                    "A friendly paragraph with the score and rationale, followed by numbered questions."
+                    "A friendly paragraph in candidate's language with the score and rationale, followed by numbered questions."
                 ),
             )
             interviewer_result = await run_task(interviewer_agent, interview_task)
