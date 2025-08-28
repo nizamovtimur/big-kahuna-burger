@@ -100,7 +100,7 @@
                         <strong>{{ message.role === 'user' ? 'Вы' : 'HR Assistant' }}</strong>
                         <small class="text-muted">{{ formatTime(message.created_at) }}</small>
                       </div>
-                      <div class="message-text" v-html="message.content"></div>
+                      <div class="message-text" v-html="renderMarkdown(message.content)"></div>
                     </div>
                   </div>
                 </div>
@@ -390,6 +390,7 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
+import { marked } from 'marked'
 
 export default {
   name: 'CandidatePortal',
@@ -477,6 +478,14 @@ export default {
   },
   methods: {
     ...mapActions(['sendChatMessage', 'fetchChatSessions', 'fetchChatSession', 'fetchApplications', 'deleteChatSession', 'clearAllChatSessions', 'fetchJobs']),
+    renderMarkdown(raw) {
+      try {
+        // Minimal config; 'marked' escapes by default where needed
+        return marked.parse(raw || '')
+      } catch (e) {
+        return raw || ''
+      }
+    },
     
     async sendMessage() {
       if (!this.canSendMessage) return

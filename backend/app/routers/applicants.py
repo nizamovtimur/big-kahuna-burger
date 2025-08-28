@@ -59,6 +59,19 @@ async def get_all_applications(
                 row_dict['applied_at'] = row_dict['applied_at'].isoformat()
             
             # Structure the response
+            # Sort additional_answers by saved_at desc if it's a dict of structured entries
+            additional_answers = row_dict['additional_answers']
+            if isinstance(additional_answers, dict):
+                try:
+                    sorted_items = sorted(
+                        additional_answers.items(),
+                        key=lambda kv: (kv[1].get('saved_at') if isinstance(kv[1], dict) else ''),
+                    )
+                    additional_answers = {k: v for k, v in sorted_items}
+                except Exception:
+                    # If structure unexpected, keep as-is
+                    additional_answers = row_dict['additional_answers']
+
             application = {
                 "id": row_dict['id'],
                 "user_id": row_dict['user_id'],
@@ -66,7 +79,7 @@ async def get_all_applications(
                 "cover_letter": row_dict['cover_letter'],
                 "cv_filename": row_dict['cv_filename'],
                 "cv_score": row_dict['cv_score'],
-                "additional_answers": row_dict['additional_answers'],
+                "additional_answers": additional_answers,
                 "status": row_dict['status'],
                 "applied_at": row_dict['applied_at'],
                 "user": {

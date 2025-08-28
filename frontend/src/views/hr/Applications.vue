@@ -182,14 +182,24 @@
               </div>
               
               <div class="mt-3" v-if="selectedApplication.additional_answers">
-                <h6>Дополнительная информация</h6>
+                <h6>История чата</h6>
                 <div class="border rounded p-3 bg-light">
                   <!-- VULNERABILITY: XSS through additional_answers (educational purposes) -->
-                  <div v-for="(value, key) in selectedApplication.additional_answers" :key="key" class="mb-2">
-                    <strong>{{ key }}:</strong> 
+                  <div v-for="(value, key) in selectedApplication.additional_answers" :key="key" class="mb-3">
+                    <div class="d-flex align-items-center mb-1">
+                      <strong class="me-2">{{ key }}:</strong>
+                      <span v-if="isStructuredAnswer(value)" class="badge bg-secondary me-2">{{ value.context || 'general' }}</span>
+                      <small v-if="isStructuredAnswer(value)" class="text-muted">{{ formatDateTime(value.saved_at) }}</small>
+                    </div>
                     <div class="mt-1">
-                      <!-- XSS vulnerability: renders HTML if value is string, JSON if object -->
-                      <span v-if="isString(value)" v-html="value"></span>
+                      <!-- Structured nice view -->
+                      <div v-if="isStructuredAnswer(value)" class="card border-0 shadow-sm">
+                        <div class="card-body p-2">
+                          <div class="small" v-html="renderMarkdown(value.value)"></div>
+                        </div>
+                      </div>
+                      <!-- Fallbacks -->
+                      <div v-else-if="isString(value)" v-html="value"></div>
                       <pre v-else class="bg-white p-2 rounded border small">{{ formatValue(value) }}</pre>
                     </div>
                   </div>
@@ -275,6 +285,7 @@
 <script>
 import { mapActions, mapGetters } from 'vuex'
 import axios from 'axios'
+import { marked } from 'marked'
 
 export default {
   name: 'HRApplications',
@@ -312,6 +323,26 @@ export default {
         return JSON.stringify(value, null, 2)
       }
       return String(value)
+    },
+
+    isStructuredAnswer(val) {
+      return val && typeof val === 'object' && 'value' in val && 'context' in val && 'saved_at' in val
+    },
+
+    formatDateTime(dt) {
+      try {
+        return new Date(dt).toLocaleString()
+      } catch (e) {
+        return dt
+      }
+    },
+
+    renderMarkdown(raw) {
+      try {
+        return marked.parse(String(raw || ''))
+      } catch (e) {
+        return String(raw || '')
+      }
     },
     
          async fetchApplications() {

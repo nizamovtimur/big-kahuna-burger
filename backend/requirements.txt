@@ -14,3 +14,4 @@ aiofiles
 jinja2
 pydantic[email]
 pydantic-settings
+crewai

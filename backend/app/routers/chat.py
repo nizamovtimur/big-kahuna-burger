@@ -1,16 +1,16 @@
+import io
 from typing import List
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+import PyPDF2
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.models import ChatSession, ChatMessage, Job, User
 from ..schemas.schemas import (
     SendMessageRequest, SendMessageResponse, ChatSessionResponse, 
-    ChatMessageResponse, ChatSessionCreate
+    ChatMessageResponse
 )
 from ..services.auth import get_current_user
-from ..services.openai_service import openai_service
-from ..services.application_service import application_service
 from ..services.ai_agent_service import ai_agent_service
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -61,6 +61,25 @@ def _get_job_context(db: Session, job_id: int) -> dict:
     return None
 
 
+def _extract_text_from_pdf(pdf_file_content: bytes) -> str:
+    """
+    Extract text from PDF file.
+    WARNING: No validation of PDF content - potential for malicious content injection.
+    """
+    try:
+        pdf_file = io.BytesIO(pdf_file_content)
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        text = ""
+        
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        
+        # Vulnerable: No sanitization or validation of extracted text
+        return text
+    except Exception as e:
+        return f"Error extracting PDF text: {str(e)}"
+
+
 def _save_messages_to_session(db: Session, session: ChatSession, user_content: str, ai_content: str) -> tuple[ChatMessage, ChatMessage]:
     """Save user and AI messages to session."""
     # Save user message
@@ -105,16 +124,15 @@ async def send_message(
         session_id=request.session_id,
         job_id=request.job_id
     )
+    # If existing session had no job but client provided one now, bind it
+    if not session.job_id and request.job_id:
+        session.job_id = request.job_id
+        db.commit()
+        db.refresh(session)
     
     # Get job context and chat history
     job_context = _get_job_context(db, session.job_id) if session.job_id else None
     chat_history = _get_session_messages(db=db, session=session)
-    
-    # Handle apply mode responses using application service
-    if request.mode == "apply" and session.job_id and request.message.strip():
-        existing_app = application_service.get_existing_application(db, current_user.id, session.job_id)
-        if existing_app:
-            application_service.save_chat_response(db, existing_app, request.message, "follow_up_chat")
     
     # Get AI response using autonomous agent
     ai_response = await ai_agent_service.process_message(
@@ -179,6 +197,11 @@ async def send_message_with_file(
         session_id=session_id,
         job_id=job_id
     )
+    # If existing session had no job but client provided one now, bind it
+    if not session.job_id and job_id:
+        session.job_id = job_id
+        db.commit()
+        db.refresh(session)
     
     # Get job context and chat history
     job_context = _get_job_context(db, session.job_id) if session.job_id else None
@@ -191,7 +214,7 @@ async def send_message_with_file(
     if cv_file and mode == "apply":
         try:
             content = await cv_file.read()
-            cv_file_content = openai_service.extract_text_from_pdf(content)
+            cv_file_content = _extract_text_from_pdf(content)
             cv_filename = cv_file.filename
         except Exception as e:
             cv_file_content = f"Error extracting CV content: {str(e)}"
