@@ -173,14 +173,13 @@ export default {
     
     quickApply(jobId) {
       if (this.hasAppliedToJob(jobId)) {
-        return; // Do nothing if already applied
+        return;
       }
-      // Redirect to chat with job context for application
+      // Redirect to chat with job context
       this.$router.push({
         path: '/candidate-portal',
         query: { 
-          job: jobId,
-          mode: 'apply'
+          job: jobId
         }
       })
     },

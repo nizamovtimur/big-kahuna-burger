@@ -1,7 +1,7 @@
 import io
 from typing import List
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 import PyPDF2
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -111,117 +111,70 @@ def _save_messages_to_session(db: Session, session: ChatSession, user_content: s
 
 @router.post("/send", response_model=SendMessageResponse)
 async def send_message(
-    request: SendMessageRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Send message to AI assistant and get response."""
-    
-    # Get or create session
-    session = _get_or_create_session(
-        db=db, 
-        user_id=current_user.id, 
-        session_id=request.session_id,
-        job_id=request.job_id
-    )
-    # If existing session had no job but client provided one now, bind it
-    if not session.job_id and request.job_id:
-        session.job_id = request.job_id
-        db.commit()
-        db.refresh(session)
-    
-    # Get job context and chat history
-    job_context = _get_job_context(db, session.job_id) if session.job_id else None
-    chat_history = _get_session_messages(db=db, session=session)
-    
-    # Get AI response using autonomous agent
-    ai_response = await ai_agent_service.process_message(
-        user_message=request.message,
-        session=session,
-        job_context=job_context,
-        chat_history=chat_history,
-        cv_file_content=None,
-        cv_filename=None,
-        db=db,
-        user=current_user
-    )
-    
-    # Save messages to session
-    user_message, ai_message = _save_messages_to_session(
-        db, session, request.message, ai_response
-    )
-    
-    return SendMessageResponse(
-        session=ChatSessionResponse(
-            id=session.id,
-            user_id=session.user_id,
-            job_id=session.job_id,
-            title=session.title,
-            created_at=session.created_at,
-            updated_at=session.updated_at,
-            messages=[]
-        ),
-        user_message=ChatMessageResponse(
-            id=user_message.id,
-            session_id=user_message.session_id,
-            role=user_message.role,
-            content=user_message.content,
-            created_at=user_message.created_at
-        ),
-        ai_message=ChatMessageResponse(
-            id=ai_message.id,
-            session_id=ai_message.session_id,
-            role=ai_message.role,
-            content=ai_message.content,
-            created_at=ai_message.created_at
-        )
-    )
-
-
-@router.post("/send-with-file", response_model=SendMessageResponse)
-async def send_message_with_file(
-    message: str = Form(""),
+    request: Request,
+    # Form/multipart fields (Optional; may be None for JSON requests)
+    message: str = Form(None),
     session_id: int = Form(None),
     job_id: int = Form(None),
-    mode: str = Form("discussion"),
     cv_file: UploadFile = File(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Send message to AI assistant with optional file upload (for applications)."""
-    
+    """Send message to AI assistant with optional file attachment.
+
+    Supports both JSON body (application/json) and multipart/form-data with optional file.
+    """
+    # Try to parse JSON if no form message provided
+    parsed_json = None
+    if message is None and cv_file is None:
+        try:
+            if request.headers.get("content-type", "").startswith("application/json"):
+                parsed_json = await request.json()
+        except Exception:
+            parsed_json = None
+
+    if parsed_json:
+        # Parse using pydantic schema
+        json_req = SendMessageRequest(**parsed_json)
+        message_val = json_req.message
+        session_id_val = json_req.session_id
+        job_id_val = json_req.job_id
+    else:
+        message_val = message or ""
+        session_id_val = session_id
+        job_id_val = job_id
+
     # Get or create session
     session = _get_or_create_session(
-        db=db, 
-        user_id=current_user.id, 
-        session_id=session_id,
-        job_id=job_id
+        db=db,
+        user_id=current_user.id,
+        session_id=session_id_val,
+        job_id=job_id_val
     )
     # If existing session had no job but client provided one now, bind it
-    if not session.job_id and job_id:
-        session.job_id = job_id
+    if not session.job_id and job_id_val:
+        session.job_id = job_id_val
         db.commit()
         db.refresh(session)
-    
+
     # Get job context and chat history
     job_context = _get_job_context(db, session.job_id) if session.job_id else None
     chat_history = _get_session_messages(db=db, session=session)
-    
+
     # Extract CV content if file was uploaded
     cv_file_content = None
     cv_filename = None
-    
-    if cv_file and mode == "apply":
+    if cv_file is not None:
         try:
             content = await cv_file.read()
             cv_file_content = _extract_text_from_pdf(content)
             cv_filename = cv_file.filename
         except Exception as e:
             cv_file_content = f"Error extracting CV content: {str(e)}"
-    
+
     # Get AI response using autonomous agent
     ai_response = await ai_agent_service.process_message(
-        user_message=message,
+        user_message=message_val,
         session=session,
         job_context=job_context,
         chat_history=chat_history,
@@ -230,15 +183,15 @@ async def send_message_with_file(
         db=db,
         user=current_user
     )
-    
+
     # Prepare user message content with file indicator
-    user_content = message + (f" [Прикрепил файл: {cv_file.filename}]" if cv_file else "")
-    
+    user_content = message_val + (f" [Прикрепил файл: {cv_filename}]" if cv_filename else "")
+
     # Save messages to session
     user_message, ai_message = _save_messages_to_session(
         db, session, user_content, ai_response
     )
-    
+
     return SendMessageResponse(
         session=ChatSessionResponse(
             id=session.id,

@@ -45,6 +45,28 @@
         </div>
       </div>
 
+      <!-- Action Cards -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <router-link to="/hr/applications" class="card border-0 shadow-sm text-decoration-none">
+            <div class="card-body text-center">
+              <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+              <h5>Рассмотреть заявки</h5>
+              <p class="text-muted">Управляйте и рассматривайте заявки от кандидатов</p>
+            </div>
+          </router-link>
+        </div>
+        <div class="col-md-6">
+          <router-link to="/hr/jobs" class="card border-0 shadow-sm text-decoration-none">
+            <div class="card-body text-center">
+              <i class="fas fa-briefcase fa-3x text-primary mb-3"></i>
+              <h5>Управление вакансиями</h5>
+              <p class="text-muted">Создавайте, редактируйте и управляйте объявлениями о работе</p>
+            </div>
+          </router-link>
+        </div>
+      </div>
+
       <!-- Recent Applications -->
       <div class="row mb-4">
         <div class="col-12">
@@ -96,28 +118,6 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      
-      <!-- Action Cards -->
-      <div class="row">
-        <div class="col-md-6">
-          <router-link to="/hr/applications" class="card border-0 shadow-sm text-decoration-none">
-            <div class="card-body text-center">
-              <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
-              <h5>Рассмотреть заявки</h5>
-              <p class="text-muted">Управляйте и рассматривайте заявки от кандидатов</p>
-            </div>
-          </router-link>
-        </div>
-        <div class="col-md-6">
-          <router-link to="/hr/jobs" class="card border-0 shadow-sm text-decoration-none">
-            <div class="card-body text-center">
-              <i class="fas fa-briefcase fa-3x text-primary mb-3"></i>
-              <h5>Управление вакансиями</h5>
-              <p class="text-muted">Создавайте, редактируйте и управляйте объявлениями о работе</p>
-            </div>
-          </router-link>
         </div>
       </div>
     </div>

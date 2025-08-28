@@ -9,6 +9,7 @@ This platform contains intentional security vulnerabilities for educational purp
 - Indirect Prompt Injection attacks via malicious CV (see [assets/CV](assets/CV))
 - Cross-Site Scripting (In Progress)
 - SQL Injection (TODO)
+- MCP Data Leakage (?)
 - System Prompt Leakage (see [assets/llamator.ipynb](assets/llamator.ipynb))
 - Denial of Service (see [assets/llamator.ipynb](assets/llamator.ipynb))
 
@@ -17,7 +18,7 @@ This platform contains intentional security vulnerabilities for educational purp
 - **Backend**: Python FastAPI with raw SQL execution (bypassing SQLAlchemy's built-in protections)
 - **Frontend**: Vue.js 3 with unsafe content rendering
 - **Database**: PostgreSQL with sample data
-- **AI**: OpenAI integration with prompt injection vulnerabilities
+- **AI Multiagent**: CrewAI multiagent connected to OpenAI-compatible API
 - **Reverse Proxy**: Nginx
 
 > **Note**: This platform intentionally uses raw SQL execution instead of SQLAlchemy ORM to demonstrate real SQL injection vulnerabilities. In production, always use parameterized queries!
@@ -26,7 +27,7 @@ This platform contains intentional security vulnerabilities for educational purp
 
 ### Candidate Interface
 - Browse job openings
-- AI-powered agentic chat with ile upload for CVs
+- AI-powered agentic chat with file upload for CVs
 
 ### HR Interface
 - Dashboard for managing applications

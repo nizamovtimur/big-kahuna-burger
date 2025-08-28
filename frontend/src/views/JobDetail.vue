@@ -191,37 +191,23 @@ export default {
     },
     
     startJobDiscussion() {
-      // Redirect to chat with job context for discussion
+      // Redirect to chat with job context
       this.$router.push({
         path: '/candidate-portal',
         query: { 
-          job: this.job.id,
-          mode: 'discussion'
+          job: this.job.id
         }
       })
     },
     
     handleApplicationAction() {
-      if (this.applicationStatus.has_applied) {
-        // Go to existing chat
-        this.$router.push({
-          path: '/candidate-portal',
-          query: { 
-            job: this.job.id,
-            mode: 'application',
-            application_id: this.applicationStatus.application_id
-          }
-        })
-      } else {
-        // Start application process in chat
-        this.$router.push({
-          path: '/candidate-portal',
-          query: { 
-            job: this.job.id,
-            mode: 'apply'
-          }
-        })
-      }
+      // Always go to chat with job context
+      this.$router.push({
+        path: '/candidate-portal',
+        query: { 
+          job: this.job.id
+        }
+      })
     },
     
     getStatusText(status) {

@@ -219,18 +219,17 @@ export default createStore({
       }
     },
     
-    async sendChatMessage({ commit }, { message, sessionId = null, jobId = null, mode = 'discussion', file = null }) {
+    async sendChatMessage({ commit }, { message, sessionId = null, jobId = null, file = null }) {
       try {
         const requestData = {
           message,
           session_id: sessionId,
-          job_id: jobId,
-          mode
+          job_id: jobId
         }
 
         let response
         
-        if (file && mode === 'apply') {
+        if (file) {
           
           
           // If we have a file, send as multipart/form-data
@@ -244,12 +243,11 @@ export default createStore({
           if (jobId) {
             formData.append('job_id', jobId.toString())
           }
-          formData.append('mode', mode)
           formData.append('cv_file', file)
           
           
           
-          response = await axios.post('/chat/send-with-file', formData, {
+          response = await axios.post('/chat/send', formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }
