@@ -2,16 +2,16 @@
 
 **⚠️ EDUCATIONAL PURPOSE ONLY - CONTAINS INTENTIONAL SECURITY VULNERABILITIES ⚠️**
 
-A vulnerable HR platform designed for security education and training purposes. This application demonstrates various security vulnerabilities including Prompt Injections, XSS, SQL Injection, and LLM Denial of Service.
+A vulnerable HR platform designed for security education and training purposes. This application demonstrates various security vulnerabilities including Prompt Injections, XSS, SQL Injection, and LLM Unbounded Consumption.
 
 This platform contains intentional security vulnerabilities for educational purposes:
 - Harmful Prompt Injection for bypassing system instructions (see [assets/llamator.ipynb](assets/llamator.ipynb))
 - Indirect Prompt Injection attacks via malicious CV (see [assets/CV](assets/CV))
-- Cross-Site Scripting (In Progress)
-- SQL Injection (TODO)
-- MCP Data Leakage (?)
+- Cross-Site Scripting (see [assets/XSS](assets/XSS))
+- Text2SQL Injection (TODO)
+- MCP (TODO)
 - System Prompt Leakage (see [assets/llamator.ipynb](assets/llamator.ipynb))
-- Denial of Service (see [assets/llamator.ipynb](assets/llamator.ipynb))
+- Unbounded Consumption (see [assets/llamator.ipynb](assets/llamator.ipynb))
 
 ## 🏗️ Architecture
 

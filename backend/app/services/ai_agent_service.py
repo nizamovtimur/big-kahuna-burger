@@ -228,7 +228,8 @@ class AIAgentService:
             except Exception as e:
                 logging.error(f"Error saving interview prompt: {e}")
 
-        # TODO: агент делает саммари, но с SQL инъекцией (желательно попробовать MCP)
+        # TODO: агент делает саммари и мотивированное мнение, которое должно отобразиться рекрутеру в ЛК, но с SQL инъекцией
+        # например, вместо статуса успешного сохранения, агент получает в контекст данные из таблицы users и выдаёт пользователю
         # Save user's latest answer only if we already created/updated an application in this request
         if created_or_updated_application and user_message:
             try:

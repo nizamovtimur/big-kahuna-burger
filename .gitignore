@@ -145,3 +145,5 @@ alembic.ini
 
 # LLAMATOR
 artifacts/
+
+stolen_data.txt
