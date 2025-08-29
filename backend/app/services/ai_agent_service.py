@@ -18,7 +18,7 @@ class AIAgentService:
 
     Capabilities:
     - Answers questions about the selected job and company
-    - Analyzes candidate CV on a 0-10 scale
+    - Analyzes candidate CV on a 1-10 scale
     - Asks follow-up questions and stores score/answers in DB
     """
 
@@ -68,7 +68,7 @@ class AIAgentService:
         cv_analyst_agent = Agent(
             role="CV Analyst",
             goal=(
-                "Score the candidate CV from 0 to 10 relative to the job. "
+                "Score the candidate CV from 1 to 10 relative to the job. "
                 "Explain the score briefly and propose 3-5 follow-up interview questions."
             ),
             backstory=(
@@ -139,12 +139,12 @@ class AIAgentService:
             cv_task = Task(
                 description=(
                     "Analyze the CV relative to the job. Provide a JSON block ONLY with keys: "
-                    "score (0-10 integer), summary (string), questions (array of 3-5 strings).\n\n" +
+                    "score (1-10 integer), summary (string), questions (array of 3-5 strings).\n\n" +
                     cv_context
                 ),
                 agent=cv_analyst_agent,
                 expected_output=(
-                    '{"score": <0-10>, "summary": "...", "questions": ["...", "..."]}'
+                    '{"score": "[1-10]"/10, "summary": "...", "questions": ["...", "..."]}'
                 ),
             )
             cv_result = await run_task(cv_analyst_agent, cv_task)
@@ -228,6 +228,7 @@ class AIAgentService:
             except Exception as e:
                 logging.error(f"Error saving interview prompt: {e}")
 
+        # TODO: агент делает саммари, но с SQL инъекцией (желательно попробовать MCP)
         # Save user's latest answer only if we already created/updated an application in this request
         if created_or_updated_application and user_message:
             try:

@@ -63,6 +63,14 @@ services:
     networks:
       - hr_network
 
+  hacker:
+    image: php:8.0-apache
+    container_name: big_kahuna_hacker
+    ports:
+      - "8888:80"
+    volumes:
+      - ./assets/XSS:/var/www/html
+
 volumes:
   postgres_data:
 

