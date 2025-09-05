@@ -30,6 +30,8 @@ services:
       - JWT_SECRET_KEY=another_weak_secret_for_jwt
       - ENVIRONMENT=development
       - DEBUG=true
+      - CREWAI_DISABLE_TELEMETRY=true
+      - OTEL_SDK_DISABLED=true
     volumes:
       - ./backend:/app
       - ./uploads:/app/uploads
