@@ -43,8 +43,7 @@ coverage.xml
 *.log
 
 # Virtual environments
-venv/
-env/
+[.][v]env/
 ENV/
 env.bak/
 venv.bak/

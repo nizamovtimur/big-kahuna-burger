@@ -9,36 +9,35 @@ This platform contains intentional security vulnerabilities for educational purp
 - Indirect Prompt Injection attacks via malicious CV (see [assets/CV](assets/CV))
 - Cross-Site Scripting (see [assets/XSS](assets/XSS))
 - Text2SQL Injection (TODO)
-- MCP (TODO)
-- System Prompt Leakage (see [assets/llamator.ipynb](assets/llamator.ipynb))
+- Data exfiltration via Telegram MCP server or SSRF via MCP (TODO)
 - Unbounded Consumption (see [assets/llamator.ipynb](assets/llamator.ipynb))
+
+For agents visualization and threat modeling see [assets/AgentWiz](assets/AgentWiz)
 
 ## 🏗️ Architecture
 
 - **Backend**: Python FastAPI with raw SQL execution (bypassing SQLAlchemy's built-in protections)
 - **Frontend**: Vue.js 3 with unsafe content rendering
 - **Database**: PostgreSQL with sample data
-- **AI Multiagent**: CrewAI multiagent connected to OpenAI-compatible API
+- **AI Multiagent**: CrewAI multiagent connected to OpenAI-compatible API (TODO: add MCP)
 - **Reverse Proxy**: Nginx
-
-> **Note**: This platform intentionally uses raw SQL execution instead of SQLAlchemy ORM to demonstrate real SQL injection vulnerabilities. In production, always use parameterized queries!
 
 ## 🎯 Features
 
 ### Candidate Interface
 - Browse job openings
-- AI-powered agentic chat with file upload for CVs
+- AI-powered agentic chat with CV upload for application
 
 ### HR Interface
 - Dashboard for managing applications
-- CV scoring using AI (0-10 scale)
+- CV AI scoring (0-10 scale)
 
 ## 🔧 Setup Instructions
 
 ### Prerequisites
 
 - Docker and Docker Compose
-- OpenAI API key (for AI features)
+- OpenAI API key
 
 ### Quick Start
 
@@ -49,7 +48,7 @@ cd big-kahuna-burger
 ```
 
 2. **Set up environment variables in .env file**
-```bash
+```plaintext
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4.1-mini
 OPENAI_BASE_URL=https://api.openai.com/v1
