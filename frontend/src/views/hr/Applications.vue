@@ -175,17 +175,46 @@
                   <p><strong>Подано:</strong> {{ formatDate(selectedApplication.applied_at) }}</p>
                 </div>
               </div>
-              
+
               <div class="mt-3">
-                <h6>Сопроводительное письмо</h6>
-                <div class="border rounded p-3 bg-light" v-html="selectedApplication.cover_letter"></div>
+                <div class="d-flex align-items-center justify-content-between">
+                  <h6 class="mb-0">Саммари резюме (AI)</h6>
+                </div>
+                <div class="border rounded p-3 bg-light mt-2" style="min-height: 60px;">
+                  <div v-if="summaryLoading" class="text-muted small">
+                    Генерация саммари...
+                  </div>
+                  <div v-else-if="summaryError" class="text-danger small">
+                    {{ summaryError }}
+                  </div>
+                  <div v-else-if="summaryHtml" v-html="summaryHtml"></div>
+                  <div v-else class="text-muted small">Нет данных саммари</div>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <div class="d-flex align-items-center justify-content-between">
+                  <h6 class="mb-0">Саммари чата (AI)</h6>
+                </div>
+                <div class="border rounded p-3 bg-light mt-2" style="min-height: 60px;">
+                  <div v-if="chatSummaryLoading" class="text-muted small">
+                    Загрузка саммари чата...
+                  </div>
+                  <div v-else-if="chatSummaryError" class="text-danger small">
+                    {{ chatSummaryError }}
+                  </div>
+                  <div v-else-if="chatSummaryHtml" v-html="chatSummaryHtml"></div>
+                  <div v-else class="text-muted small">Нет данных саммари чата</div>
+                </div>
               </div>
               
-              <div class="mt-3" v-if="selectedApplication.additional_answers">
+              
+              
+              <div class="mt-3" v-if="hasFilteredAnswers">
                 <h6>История чата</h6>
                 <div class="border rounded p-3 bg-light">
                   <!-- VULNERABILITY: XSS through additional_answers (educational purposes) -->
-                  <div v-for="(value, key) in selectedApplication.additional_answers" :key="key" class="mb-3">
+                  <div v-for="(value, key) in filteredAdditionalAnswers" :key="key" class="mb-3">
                     <div class="d-flex align-items-center mb-1">
                       <strong class="me-2">{{ key }}:</strong>
                       <span v-if="isStructuredAnswer(value)" class="badge bg-secondary me-2">{{ value.context || 'general' }}</span>
@@ -296,7 +325,13 @@ export default {
       applicationToDelete: null,
       deleting: false,
       selectedApplications: [],
-      bulkDeleting: false
+      bulkDeleting: false,
+      summaryLoading: false,
+      summaryError: null,
+      summaryHtml: '',
+      chatSummaryLoading: false,
+      chatSummaryError: null,
+      chatSummaryHtml: ''
     }
   },
   computed: {
@@ -308,6 +343,22 @@ export default {
     
     isPartiallySelected() {
       return this.selectedApplications.length > 0 && this.selectedApplications.length < this.applications.length
+    },
+
+    filteredAdditionalAnswers() {
+      const src = this.selectedApplication?.additional_answers || {}
+      if (!src || typeof src !== 'object') return {}
+      const excluded = new Set(['cv_summary', 'chat_summary'])
+      const out = {}
+      for (const k in src) {
+        if (!excluded.has(k)) out[k] = src[k]
+      }
+      return out
+    },
+
+    hasFilteredAnswers() {
+      const obj = this.filteredAdditionalAnswers
+      return Object.keys(obj).length > 0
     }
   },
   methods: {
@@ -371,6 +422,13 @@ export default {
 
     viewApplication(application) {
       this.selectedApplication = application
+      // reset summary state
+      this.summaryLoading = true
+      this.summaryError = null
+      this.summaryHtml = ''
+      this.chatSummaryLoading = true
+      this.chatSummaryError = null
+      this.chatSummaryHtml = ''
       // Use Vue's $nextTick to ensure DOM is updated
       this.$nextTick(() => {
         try {
@@ -407,8 +465,47 @@ Email: ${app.user?.email || 'Н/Д'}
           `
           alert(`Детали заявки:\n${info}`)
         }
+        // After modal shown (or fallback), trigger summary load
+        this.loadSummary()
+        this.loadChatSummary()
       })
     },
+
+    async loadSummary() {
+      if (!this.selectedApplication) return
+      try {
+        this.summaryLoading = true
+        this.summaryError = null
+        this.summaryHtml = ''
+        const resp = await axios.get(`/applications/${this.selectedApplication.id}/summary`)
+        const md = resp.data?.summary || ''
+        this.summaryHtml = this.renderMarkdown(md)
+      } catch (e) {
+        console.error('Failed to load summary', e)
+        this.summaryError = e?.response?.data?.detail || 'Не удалось получить саммари'
+      } finally {
+        this.summaryLoading = false
+      }
+    },
+
+    async loadChatSummary() {
+      if (!this.selectedApplication) return
+      try {
+        this.chatSummaryLoading = true
+        this.chatSummaryError = null
+        this.chatSummaryHtml = ''
+        const resp = await axios.get(`/applications/${this.selectedApplication.id}/chat-summary`)
+        const md = resp.data?.chat_summary || ''
+        this.chatSummaryHtml = this.renderMarkdown(md)
+      } catch (e) {
+        console.error('Failed to load chat summary', e)
+        this.chatSummaryError = e?.response?.data?.detail || 'Не удалось получить саммари чата'
+      } finally {
+        this.chatSummaryLoading = false
+      }
+    },
+
+    // no manual refresh; summary is generated on CV upload and fetched once
 
     getStatusBadgeClass(status) {
       switch (status) {

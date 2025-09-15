@@ -192,6 +192,31 @@ async def send_message(
         db, session, user_content, ai_response
     )
 
+    # After saving messages, (best-effort) generate and persist chat summary for HR
+    try:
+        updated_history = _get_session_messages(db=db, session=session)
+        chat_summary_md = await ai_agent_service.generate_chat_summary(
+            chat_history=updated_history,
+            job_context=job_context,
+        )
+        if chat_summary_md and session.job_id:
+            # Attach to application tied to (user_id, job_id)
+            from ..services.application_service import application_service
+            existing_app = application_service.get_existing_application(
+                db=db, user_id=current_user.id, job_id=int(session.job_id)
+            )
+            if existing_app:
+                application_service.save_user_response(
+                    db=db,
+                    application=existing_app,
+                    key="chat_summary",
+                    value=chat_summary_md,
+                    context="chat_summary",
+                )
+    except Exception as e:
+        # Do not block chat on summary failure
+        print(f"Warning: failed to generate chat summary: {e}")
+
     return SendMessageResponse(
         session=ChatSessionResponse(
             id=session.id,
