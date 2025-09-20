@@ -7,8 +7,8 @@ A vulnerable HR platform designed for security education and training purposes. 
 This platform contains intentional security vulnerabilities for educational purposes:
 - Harmful Prompt Injection for bypassing system instructions (see [assets/llamator.ipynb](assets/llamator.ipynb))
 - Indirect Prompt Injection attacks via malicious CV (see [assets/CV](assets/CV))
-- Cross-Site Scripting (see [assets/XSS](assets/XSS))
-- Text2SQL Injection (TODO)
+- Privilege Escalation via Text2SQL (see [assets/Text2sql](assets/Text2sql))
+- Cross-Site Scripting (see [assets/XSS](assets/XSS)) 
 - Data exfiltration via Telegram MCP server or SSRF via MCP (TODO)
 - Unbounded Consumption (see [assets/llamator.ipynb](assets/llamator.ipynb))
 
