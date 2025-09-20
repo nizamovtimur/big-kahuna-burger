@@ -22,6 +22,13 @@ def execute_raw_query(query: str):
     WARNING: This function is intentionally vulnerable to SQL injection
     for educational purposes. Never use this in production!
     """
-    with engine.connect() as connection:
+    # Use a transactional context so DML/DDL statements are committed
+    with engine.begin() as connection:
         result = connection.execute(text(query))
-        return result.fetchall() 
+        # For SELECT-like statements return rows; for others return empty list
+        try:
+            if hasattr(result, "returns_rows") and result.returns_rows:
+                return result.fetchall()
+        except Exception:
+            pass
+        return []

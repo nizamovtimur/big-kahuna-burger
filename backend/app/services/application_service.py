@@ -73,6 +73,37 @@ class ApplicationService:
             JobApplication.job_id == job_id
         ).first()
     
+    def create_or_get_application(
+        self,
+        db: Session,
+        user: User,
+        job_id: int,
+        cover_letter: str = ""
+    ) -> JobApplication:
+        """
+        Ensure an application exists for (user, job). If absent, create minimal record.
+        """
+        existing = self.get_existing_application(db, user.id, job_id)
+        if existing:
+            return existing
+        # Ensure job exists
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        application = JobApplication(
+            user_id=user.id,
+            job_id=job_id,
+            cover_letter=cover_letter,
+            cv_filename=None,
+            cv_score=None,
+            additional_answers={},
+            status="pending",
+        )
+        db.add(application)
+        db.commit()
+        db.refresh(application)
+        return application
+
     def save_user_response(
         self,
         db: Session,

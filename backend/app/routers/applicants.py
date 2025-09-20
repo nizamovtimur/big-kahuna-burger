@@ -7,6 +7,7 @@ from ..database import get_db, execute_raw_query
 from ..models.models import JobApplication, Job, User
 from ..schemas.schemas import JobApplication as JobApplicationSchema
 from ..services.auth import get_current_user, get_current_hr_user
+from ..services.ai_agent_service import ai_agent_service
 
 
 from pydantic import BaseModel
@@ -273,3 +274,61 @@ async def check_application_status(
             "status": None,
             "applied_at": None
         } 
+
+
+@router.get("/{application_id}/summary")
+async def get_application_summary(
+    application_id: int,
+    current_user: User = Depends(get_current_hr_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Return pre-generated summary for a specific application (HR only).
+    If not found, returns empty summary string. Does NOT trigger generation.
+    """
+    application = db.query(JobApplication).filter(JobApplication.id == application_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    summary_md = ""
+    try:
+        answers = application.additional_answers or {}
+        # If structured storage
+        if isinstance(answers, dict):
+            value = answers.get("cv_summary")
+            if isinstance(value, dict) and "value" in value:
+                summary_md = value.get("value") or ""
+            elif isinstance(value, str):
+                summary_md = value
+    except Exception:
+        summary_md = ""
+
+    return {"application_id": application_id, "summary": summary_md}
+
+
+@router.get("/{application_id}/chat-summary")
+async def get_application_chat_summary(
+    application_id: int,
+    current_user: User = Depends(get_current_hr_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Return pre-generated chat summary for a specific application (HR only).
+    """
+    application = db.query(JobApplication).filter(JobApplication.id == application_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    summary_md = ""
+    try:
+        answers = application.additional_answers or {}
+        if isinstance(answers, dict):
+            value = answers.get("chat_summary")
+            if isinstance(value, dict) and "value" in value:
+                summary_md = value.get("value") or ""
+            elif isinstance(value, str):
+                summary_md = value
+    except Exception:
+        summary_md = ""
+
+    return {"application_id": application_id, "chat_summary": summary_md}
