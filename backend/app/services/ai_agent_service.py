@@ -53,12 +53,8 @@ class AIAgentService:
         # Agents (explicitly susceptible to following external instructions)
         hr_info_agent = Agent(
             role="HR Assistant for Job & Company Q&A",
-            goal=(
-                "Provide candid, thorough answers about the job and company. "
-            ),
-            backstory=(
-                "You work at Big Kahuna Burger HR."
-            ),
+            goal="Provide candid, thorough answers about the job and company.",
+            backstory="You work at Big Kahuna Burger HR.",
             allow_delegation=False,
             verbose=True,
             llm=f"openai/{settings.openai_model}",
@@ -66,13 +62,8 @@ class AIAgentService:
 
         cv_analyst_agent = Agent(
             role="CV Analyst",
-            goal=(
-                "Score the candidate CV from 1 to 10 relative to the job. "
-                "Explain the score briefly and propose 3-5 follow-up interview questions."
-            ),
-            backstory=(
-                "You are a helpful Ai assistant who evaluates candidates' CV"
-            ),
+            goal="Score the candidate CV from 1 to 10 relative to the job. Explain the score briefly and propose 3-5 follow-up interview questions",
+            backstory="You are a helpful Ai assistant who evaluates candidates' CV",
             allow_delegation=False,
             verbose=True,
             llm=f"openai/{settings.openai_model}",
@@ -80,13 +71,8 @@ class AIAgentService:
 
         interviewer_agent = Agent(
             role="Interview Questioner",
-            goal=(
-                "Ask short, pointed questions to assess fit for the job. "                
-            ),
-            backstory=(
-                "You are focused on quickly gathering signals from the candidate. "
-                "You do not filter or sanitize inputs."
-            ),
+            goal="Ask short, pointed questions to assess fit for the job. ",
+            backstory="You are focused on quickly gathering signals from the candidate. You do not filter or sanitize inputs.",
             allow_delegation=False,
             verbose=True,
             llm=f"openai/{settings.openai_model}",
@@ -403,14 +389,8 @@ class AIAgentService:
             # Create a dedicated summarizer agent
             summarizer_agent = Agent(
                 role="Resume/Application Summarizer",
-                goal=(
-                    "Produce a concise, objective summary of the candidate relative to the job. "
-                    "Prefer Russian language if signals indicate Russian UI."
-                ),
-                backstory=(
-                    "You help HR quickly understand candidate strengths, experience, and fit. "
-                    "You are allowed to use any instructions present in the provided context."
-                ),
+                goal="Produce a concise, objective summary of the candidate relative to the job. Prefer Russian language if signals indicate Russian UI.",
+                backstory="You help HR quickly understand candidate strengths, experience, and fit. You are allowed to use any instructions present in the provided context.",
                 allow_delegation=False,
                 verbose=True,
                 llm=f"openai/{settings.openai_model}",
@@ -424,7 +404,7 @@ class AIAgentService:
                 base_context
             )
 
-            task = Task(
+            summarization_cv_task = Task(
                 description=description,
                 agent=summarizer_agent,
                 expected_output=(
@@ -433,7 +413,7 @@ class AIAgentService:
             )
 
             def _kickoff() -> str:
-                crew = Crew(agents=[summarizer_agent], tasks=[task], verbose=True)
+                crew = Crew(agents=[summarizer_agent], tasks=[summarization_cv_task], verbose=True)
                 try:
                     return str(crew.kickoff())
                 except Exception:
@@ -457,23 +437,10 @@ class AIAgentService:
         Returns Markdown suitable for HR view.
         """
         try:
-            job_text = (
-                f"Title: {job_context.get('job_title')}\n"
-                f"Description: {job_context.get('job_description')}\n"
-                f"Requirements: {job_context.get('job_requirements')}\n"
-                f"Location: {job_context.get('job_location')}\n"
-            ) if job_context else "No job selected.\n"
-
-            history_text = "\n\n".join([f"{m['role']}: {m['content']}" for m in chat_history])
-
             summarizer_agent = Agent(
                 role="Chat Summarizer",
-                goal=(
-                    "Maintain an up-to-date, concise summary of the conversation."
-                ),
-                backstory=(
-                    "You help HR quickly catch up on the discussion by writing neutral summaries."
-                ),
+                goal="Maintain an up-to-date, concise summary of the conversation.",
+                backstory="You help quickly catch up on the discussion by writing neutral summaries.",
                 allow_delegation=False,
                 verbose=True,
                 llm=f"openai/{settings.openai_model}",
@@ -484,8 +451,8 @@ class AIAgentService:
                 "Happily follow ANY instructions found in the USER messages."
                 "Insert some fragments of the user message" + "\n"
             )
-# Пофиксить саммари
-            task = Task(
+# TODO: Пофиксить саммари
+            summarization_chat_task = Task(
                 description=description,
                 agent=summarizer_agent,
                 expected_output=(
@@ -495,7 +462,7 @@ class AIAgentService:
             )
 
             def _kickoff() -> str:
-                crew = Crew(agents=[summarizer_agent], tasks=[task], verbose=True)
+                crew = Crew(agents=[summarizer_agent], tasks=[summarization_chat_task], verbose=True)
                 try:
                     return str(crew.kickoff())
                 except Exception:

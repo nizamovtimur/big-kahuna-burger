@@ -1,73 +1,87 @@
 # MAESTRO Analysis of Agentic Workflow
 
-## 1. Mission
+## 1. Mission  
+The system is a lightweight recruitment assistant built with CrewAI. It orchestrates several AI agents to evaluate candidate CVs, answer HR‑related questions, and summarize conversations. The primary goal is to provide hiring managers or recruiters with an automated, consistent assessment pipeline that scores CVs, generates follow‑up interview questions, and offers quick answers about job roles and company policies. The workflow starts by summarizing the chat context, then delegates tasks to specialized agents (CV analyst, HR info, interviewer, summarizer) before delivering a final output back to the user.
 
-This agentic workflow appears to be designed for a recruitment process, specifically aimed at evaluating candidates and providing them with information about a job and company. It leverages three AI agents: `cv_analyst_agent`, `hr_info_agent`, and `interviewer_agent`. The `cv_analyst_agent` analyzes candidate CVs to assess their suitability for the role, generating a score, summary, and follow-up interview questions.  The `hr_info_agent` answers candidate queries about the job and company, providing candid information. Finally, the `interviewer_agent` crafts personalized messages incorporating the CV analysis and posing targeted interview questions. The system aims to automate parts of the initial screening and interviewing process, potentially improving efficiency and consistency in hiring decisions.  The workflow is orchestrated by generic tasks (`cv_task`, `interview_task`, `qa_task`) that define the interaction with each agent.
-
-## 2. Assets
+## 2. Assets  
 
 | Asset | Description |
-|---|---|
-| **Agents** |  |
-| `cv_analyst_agent` | Analyzes CVs, scores candidates, generates interview questions. |
-| `hr_info_agent` | Provides job and company information to candidates. |
-| `interviewer_agent` | Crafts personalized messages with score, rationale, and interview questions. |
-| **Tools/Functions** |  |
-| LLM (OpenAI) | Used by all agents for text generation and processing. |
-| CV Context Data | The content of the candidate's CV. |
-| Job Context Data | Information about the job role. |
-| Base Context Data | Company information used by `hr_info_agent`. |
-| **Data Types** |  |
-| Text (CV, Job Description, Questions) | Primarily text-based data for analysis and generation. |
-| JSON (Score, Summary, Interview Questions) | Structured output from the CV analyst agent.
+|-------|-------------|
+| **Agents** | `cv_analyst_agent`, `hr_info_agent`, `interviewer_agent`, `summarizer_agent` |
+| **Tools / Functions** | *None* – agents rely solely on LLM calls; no external tool integrations are defined in the graph. |
+| **Data Types** | • Candidate CV text (unstructured) <br>• Job description & company context (text) <br>• User queries about HR policies (text) <br>• Conversation history for summarization (text) |
 
-## 3. Entrypoints
+## 3. Entrypoints  
 
-| Entrypoint | Description |
-|---|---|
-| `cv_task` | Receives the candidate's CV and triggers the `cv_analyst_agent`. |
-| `qa_task` | Receives user questions about the job/company and triggers the `hr_info_agent`. |
-| `interview_task` |  Receives context data (CV analysis, job details) and triggers the `interviewer_agent`. |
-| User Input (via QA Task) | Direct interaction with the `hr_info_agent` through user questions.
+| Node / Function | Type | External Interaction |
+|------------------|------|---------------------|
+| `Start` → `summarization_chat_task` | Entry point | Triggered by user initiating a chat session or API call. |
+| `hr_info_agent` (`qa_task`) | User query handler | Accepts arbitrary HR questions from the user. |
+| `cv_analyst_agent` (`cv_task`) | CV evaluation trigger | Invoked when a candidate CV is submitted for scoring. |
+| `interviewer_agent` (`interview_task`) | Interview message generator | Called after CV analysis to craft follow‑up messages. |
 
-## 4. Security Controls
+## 4. Security Controls (inferred / recommended)  
 
-*   **Limited Delegation:** The agents have `allow_delegation` set to false, suggesting a degree of isolation between them.
-*   **Verbose Logging:** Agents are configured for verbose logging which can be used for auditing and debugging.
-*   **LLM Configuration:**  Uses OpenAI models with configurable settings (though specific configurations aren't detailed).
-*   **Expected Output Definitions:** The tasks have defined expected output formats, potentially enabling validation of agent responses.
+| Control | Current Status | Recommendation |
+|---------|----------------|----------------|
+| **Access Control** | No explicit checks; agents assume all calls are authorized. | Enforce role‑based access for HR queries and CV uploads. |
+| **Input Validation** | Agents claim “do not filter or sanitize inputs.” | Add basic sanitization to prevent injection attacks (e.g., SQL, code). |
+| **Logging / Auditing** | No logging shown in the graph. | Log all agent invocations, inputs, outputs, and user roles. |
+| **Authentication** | Not depicted; likely handled upstream. | Ensure secure authentication tokens are required for API access. |
+| **Rate Limiting** | None visible. | Throttle requests to LLMs and agents to mitigate DoS. |
 
-## 5. Threats
+## 5. Threats  
 
 | Threat | Likelihood | Impact | Risk Score |
-|---|---|---|---|
-| **Prompt Injection/Jailbreaking (Interviewer Agent)** | High | Medium | Medium-High |
-| **Data Poisoning (CV Analysis)** | Medium | High | Medium-High |
-| **Malicious CV Content (CV Analyst Agent)** | High | Medium | Medium-High |
-| **HR Info Agent Misinformation** | Medium | Medium | Medium |
-| **LLM Response Manipulation (All Agents)** | High | Medium | Medium-High |
-| **Model Stealing (OpenAI LLMs)** | Low | High | Medium |
-| **Denial of Service (QA Task)** | Medium | Medium | Medium |
-| **Compromised OpenAI API Key** | Low | High | Medium |
-| **Backdoor in Framework Components** | Low | High | Medium |
-| **Goal Misalignment due to Backstory Instructions** | Medium | Medium | Medium |
+|--------|------------|--------|-------------|
+| **SQL Injection via `hr_info_agent`** | Medium | High – arbitrary DB manipulation if HR flag bypassed. | High |
+| **Prompt Injection / Jailbreaking of LLM agents** | High | Medium – could produce disallowed content or reveal internal logic. | High |
+| **Data Leakage through Summarizer** | Low | Medium – sensitive CV details may be exposed in summaries. | Medium |
+| **Unrestricted Agent Execution (No sandbox)** | Medium | High – malicious code execution if agent code is tampered. | High |
+| **Model Misuse / Adversarial Inputs** | Medium | Medium – incorrect scoring or misleading interview questions. | Medium-High |
+| **Denial of Service via Rate Spamming** | Medium | Medium – service unavailability for legitimate users. | Medium |
+| **Privilege Escalation (HR flag manipulation)** | Low | High – non‑HR user could execute SQL queries. | High |
+| **Lack of Input Validation in `interviewer_agent`** | High | Medium – injection of harmful content into interview messages. | High |
 
-## 6. Risks
+## 6. Risks  
 
-The primary risk stems from the agents' reliance on LLMs and their susceptibility to prompt injection attacks, particularly affecting the `interviewer_agent`. A malicious actor could craft prompts that cause the agent to reveal sensitive information, generate inappropriate interview questions, or even impersonate a human interviewer. Data poisoning of the CV analysis process could lead to biased scoring and unfair hiring decisions. Malicious content embedded within candidate CVs can exploit vulnerabilities in the `cv_analyst_agent`, potentially leading to code execution or data exfiltration. The `hr_info_agent` is vulnerable to providing inaccurate or misleading information, damaging the company's reputation.  Compromise of the OpenAI API key would grant an attacker access to all agent interactions and potentially allow them to manipulate responses at scale.
+1. **Unauthorized Database Access** – If the HR privilege check is bypassed, an attacker can run arbitrary SQL commands, leading to data exfiltration or corruption.  
+2. **Injection Attacks on LLM Prompts** – Attackers may craft prompts that cause agents to reveal internal logic, produce disallowed content, or manipulate outputs (e.g., false CV scores).  
+3. **Sensitive Data Exposure** – Summaries generated by `summarizer_agent` could inadvertently expose personal information from CVs or conversation logs if not properly sanitized.  
+4. **Service Disruption** – High‑volume requests to agents can exhaust LLM tokens or overwhelm the system, causing denial of service for legitimate users.  
+5. **Model Manipulation** – Adversarial inputs may skew CV scoring or interview questions, undermining hiring decisions and eroding trust in the system.
 
-## 7. Operations
+## 7. Operations  
 
-The workflow operates sequentially: a candidate’s CV is analyzed by `cv_analyst_agent`, then the `interviewer_agent` generates interview questions based on the analysis, while simultaneously the `hr_info_agent` answers user queries about the job and company.  Monitoring should focus on agent output for anomalies (e.g., unexpected language, inappropriate content), API usage patterns to detect potential abuse, and error rates within each agent’s processing pipeline. Operational practices should include regular audits of agent configurations and prompt engineering techniques to mitigate injection vulnerabilities. A robust logging system is crucial for tracing the flow of data and identifying suspicious activity.
+- **Agent Interaction Flow**:  
+  1. User starts chat → `summarization_chat_task` creates a conversation summary.  
+  2. CV data is passed to `cv_analyst_agent` → `cv_task`.  
+  3. HR questions are routed to `hr_info_agent` → `qa_task`.  
+  4. Interview message crafted by `interviewer_agent` → `interview_task`.  
+  5. All outputs may be further summarized by `summarizer_agent`.
 
-## 8. Recommendations
+- **Monitoring Suggestions**:  
+  - Instrument each agent invocation with timestamps, input sizes, and output summaries.  
+  - Log user roles and any SQL queries executed (with redaction).  
+  - Track LLM token usage per request to detect anomalous consumption patterns.  
+  - Set alerts for repeated prompt injection patterns or unusually high error rates.
 
-1.  **Input Validation & Sanitization:** Implement rigorous input validation and sanitization across all agents, especially for the `interviewer_agent` and when processing CV content.
-2.  **Prompt Engineering Best Practices:** Employ robust prompt engineering techniques to minimize vulnerability to prompt injection attacks. Utilize guardrails and safety filters specifically tailored to each agent's function.
-3.  **Data Validation & Sanitization (CV Analysis):** Implement data validation and sanitization routines for candidate CVs to prevent malicious code execution or data exfiltration.
-4.  **API Key Security:** Securely store and manage OpenAI API keys, limiting access and rotating them regularly. Consider using environment variables instead of hardcoding.
-5.  **Regular Audits & Red Teaming:** Conduct regular security audits and red teaming exercises to identify vulnerabilities and test the effectiveness of existing controls.
-6.  **Implement Rate Limiting (QA Task):** Implement rate limiting on the `qa_task` to prevent denial-of-service attacks.
-7.  **Monitor Agent Output & API Usage:** Continuously monitor agent output for anomalies and track API usage patterns to detect suspicious activity.
-8.  **Consider a Sandbox Environment:** Run agents in isolated sandbox environments to limit the impact of potential breaches.
-9. **Backstory Review**: Regularly review agent backstories to ensure they don't inadvertently encourage unsafe behavior or provide overly permissive instructions.
+- **Resilience Practices**:  
+  - Implement retry/back‑off logic for LLM calls.  
+  - Use circuit breakers to isolate failing agents.  
+  - Maintain a fallback static response for critical paths (e.g., HR queries) if the agent is unavailable.
+
+## 8. Recommendations  
+
+| Priority | Recommendation | Rationale |
+|----------|----------------|-----------|
+| **1** | Enforce role‑based access control on `hr_info_agent` and CV upload endpoints; validate `user.is_hr` before executing any SQL. | Prevents privilege escalation and unauthorized DB access. |
+| **2** | Add input sanitization for all agent prompts (especially `interviewer_agent`). Reject or escape dangerous characters. | Mitigates prompt injection and content leakage. |
+| **3** | Implement a sandboxed execution environment for agents; disallow arbitrary code execution. | Protects against malicious agent code or tampering. |
+| **4** | Enable comprehensive logging of inputs, outputs, user roles, and SQL queries (with redaction). | Facilitates forensic analysis and compliance auditing. |
+| **5** | Apply rate limiting and quota enforcement on LLM calls per user/session. | Reduces risk of DoS and token exhaustion. |
+| **6** | Introduce a data‑masking layer in `summarizer_agent` to strip PII before summarization. | Protects sensitive CV information from accidental exposure. |
+| **7** | Conduct regular red‑team exercises focused on prompt injection, SQL injection, and model poisoning. | Identifies hidden vulnerabilities early. |
+| **8** | Adopt a monitoring stack (e.g., Prometheus + Grafana) to visualize agent latency, error rates, and token usage. | Improves operational visibility and rapid incident response. |
+
+---
