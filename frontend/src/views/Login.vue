@@ -172,6 +172,7 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
+import { sanitizeInput } from '@/utils/sanitizer'
 
 export default {
   name: 'Login',
@@ -208,9 +209,18 @@ export default {
     
     async handleRegister() {
       try {
-        await this.register(this.registerForm)
+        // Sanitize form data before sending
+        const sanitizedForm = {
+          ...this.registerForm,
+          personal_notes: sanitizeInput(this.registerForm.personal_notes || ''),
+          full_name: sanitizeInput(this.registerForm.full_name || ''),
+          username: sanitizeInput(this.registerForm.username || ''),
+          email: sanitizeInput(this.registerForm.email || '')
+        }
+        
+        await this.register(sanitizedForm)
         this.activeTab = 'login'
-        this.loginForm.username = this.registerForm.username
+        this.loginForm.username = sanitizedForm.username
         alert('Регистрация прошла успешно! Пожалуйста, войдите с вашими учетными данными.')
       } catch (error) {
         // Error is handled by the store

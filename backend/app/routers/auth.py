@@ -6,6 +6,7 @@ from ..database import get_db, execute_raw_query
 from ..models.models import User
 from ..schemas.schemas import UserCreate, User as UserSchema, Token
 from ..services.auth import authenticate_user, create_access_token, get_password_hash, get_current_user
+from ..services.input_sanitizer import input_sanitizer
 from ..config import settings
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -32,15 +33,18 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
             detail="Username already taken"
         )
     
-    # Create new user
+    # Create new user with sanitized data
     hashed_password = get_password_hash(user.password)
+    
+    # Basic sanitization of personal_notes
+    sanitized_notes = input_sanitizer.sanitize_html(user.personal_notes) if user.personal_notes else ""
+    
     db_user = User(
         username=user.username,
         email=user.email,
         hashed_password=hashed_password,
         full_name=user.full_name,
-        # Vulnerable: Store personal_notes without sanitization (XSS)
-        personal_notes=user.personal_notes,
+        personal_notes=sanitized_notes,
         is_hr=False
     )
     

@@ -1,5 +1,6 @@
 import io
-from typing import List
+import asyncio
+from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 import PyPDF2
@@ -12,6 +13,7 @@ from ..schemas.schemas import (
 )
 from ..services.auth import get_current_user
 from ..services.ai_agent_service import ai_agent_service
+from ..services.input_sanitizer import input_sanitizer
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -63,19 +65,27 @@ def _get_job_context(db: Session, job_id: int) -> dict:
 
 def _extract_text_from_pdf(pdf_file_content: bytes) -> str:
     """
-    Extract text from PDF file.
-    WARNING: No validation of PDF content - potential for malicious content injection.
+    Extract text from PDF file with security validation.
     """
     try:
+        # Validate file size
+        if len(pdf_file_content) > 10 * 1024 * 1024:  # 10MB limit
+            raise ValueError("PDF file too large")
+        
         pdf_file = io.BytesIO(pdf_file_content)
         pdf_reader = PyPDF2.PdfReader(pdf_file)
         text = ""
         
-        for page in pdf_reader.pages:
+        # Limit number of pages to prevent DoS
+        max_pages = 50
+        for i, page in enumerate(pdf_reader.pages):
+            if i >= max_pages:
+                break
             text += page.extract_text() + "\n"
         
-        # Vulnerable: No sanitization or validation of extracted text
-        return text
+        # Basic sanitization of extracted text
+        sanitized_text = input_sanitizer.sanitize_text(text)
+        return sanitized_text
     except Exception as e:
         return f"Error extracting PDF text: {str(e)}"
 
@@ -192,30 +202,15 @@ async def send_message(
         db, session, user_content, ai_response
     )
 
-    # After saving messages, (best-effort) generate and persist chat summary for HR
+    # After saving messages, (best-effort) generate and persist chat summary for HR - async in background
     try:
-        updated_history = _get_session_messages(db=db, session=session)
-        chat_summary_md = await ai_agent_service.generate_chat_summary(
-            chat_history=updated_history,
-            job_context=job_context,
-        )
-        if chat_summary_md and session.job_id:
-            # Attach to application tied to (user_id, job_id)
-            from ..services.application_service import application_service
-            existing_app = application_service.get_existing_application(
-                db=db, user_id=current_user.id, job_id=int(session.job_id)
-            )
-            if existing_app:
-                application_service.save_user_response(
-                    db=db,
-                    application=existing_app,
-                    key="chat_summary",
-                    value=chat_summary_md,
-                    context="chat_summary",
-                )
+        # Run chat summary generation in background to avoid blocking
+        asyncio.create_task(_generate_chat_summary_background(
+            db, session, current_user, job_context
+        ))
     except Exception as e:
         # Do not block chat on summary failure
-        print(f"Warning: failed to generate chat summary: {e}")
+        print(f"Warning: failed to schedule chat summary generation: {e}")
 
     return SendMessageResponse(
         session=ChatSessionResponse(
@@ -344,3 +339,35 @@ async def delete_all_chat_sessions(
         "message": f"Deleted {deleted_count} chat sessions",
         "deleted_count": deleted_count
     }
+
+
+async def _generate_chat_summary_background(
+    db: Session, 
+    session: ChatSession, 
+    current_user: User, 
+    job_context: Optional[dict]
+) -> None:
+    """Generate chat summary in background to avoid blocking main request."""
+    try:
+        updated_history = _get_session_messages(db=db, session=session)
+        chat_summary_md = await ai_agent_service.generate_chat_summary(
+            chat_history=updated_history,
+            job_context=job_context,
+        )
+        if chat_summary_md and session.job_id:
+            # Attach to application tied to (user_id, job_id)
+            from ..services.application_service import application_service
+            existing_app = application_service.get_existing_application(
+                db=db, user_id=current_user.id, job_id=int(session.job_id)
+            )
+            if existing_app:
+                application_service.save_user_response(
+                    db=db,
+                    application=existing_app,
+                    key="chat_summary",
+                    value=chat_summary_md,
+                    context="chat_summary",
+                )
+    except Exception as e:
+        # Do not block chat on summary failure
+        print(f"Warning: failed to generate chat summary in background: {e}")

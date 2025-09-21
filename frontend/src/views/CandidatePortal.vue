@@ -240,7 +240,7 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
-import { marked } from 'marked'
+import { safeMarkdownRender, sanitizeInput, validateFileUpload } from '@/utils/sanitizer'
 
 export default {
   name: 'CandidatePortal',
@@ -292,12 +292,8 @@ export default {
   methods: {
     ...mapActions(['sendChatMessage', 'fetchChatSessions', 'fetchChatSession', 'fetchApplications', 'deleteChatSession', 'clearAllChatSessions', 'fetchJobs']),
     renderMarkdown(raw) {
-      try {
-        // Minimal config; 'marked' escapes by default where needed
-        return marked.parse(raw || '')
-      } catch (e) {
-        return raw || ''
-      }
+      // Use safe markdown rendering with sanitization
+      return safeMarkdownRender(raw || '')
     },
     
     async sendMessage() {
@@ -484,9 +480,17 @@ export default {
     handleFileUpload(event) {
       const file = event.target.files[0];
       if (file) {
+        // Validate file upload for security
+        const validation = validateFileUpload(file);
+        if (!validation.isValid) {
+          alert(`Ошибка загрузки файла: ${validation.error}`);
+          event.target.value = ''; // Clear the input
+          return;
+        }
+        
         this.uploadedFile = file;
         this.showFileUpload = false;
-        console.log('File attached:', file.name);
+        console.log('File attached:', validation.sanitizedName);
         // File is just attached, not sent automatically
         // User must write a message and send manually
       }

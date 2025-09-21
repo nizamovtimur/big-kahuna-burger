@@ -116,16 +116,22 @@ main {
   border-radius: 0;
 }
 
-/* Vulnerable styling - allows potential CSS injection */
+/* Secure styling - no CSS injection vulnerabilities */
 .user-content {
-  /* WARNING: This allows arbitrary HTML/CSS - XSS vulnerability */
+  /* Safe content styling */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .chat-message {
-  /* WARNING: Direct HTML rendering without sanitization */
+  /* Safe message styling with proper escaping */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .job-description {
-  /* WARNING: Raw HTML content displayed */
+  /* Safe job description styling */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 </style> 

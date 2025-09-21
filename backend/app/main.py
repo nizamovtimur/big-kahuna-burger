@@ -4,6 +4,7 @@ from .models import models
 from .routers import auth, jobs, chat, applicants
 from .config import settings
 from .services.data_seeder import seed_database
+from .middleware.rate_limiter import rate_limit_middleware
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -17,6 +18,9 @@ app = FastAPI(
 
 # CORS is handled by nginx proxy to avoid duplicate headers
 # Vulnerable CORS configuration is in nginx.conf
+
+# Add rate limiting middleware
+app.middleware("http")(rate_limit_middleware)
 
 # Include routers
 app.include_router(auth.router)
@@ -34,16 +38,18 @@ async def startup_event():
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """
-    Global exception handler that exposes sensitive information
-    WARNING: This is a vulnerability for educational purposes!
+    Secure global exception handler that doesn't expose sensitive information.
     """
-    import traceback
+    import logging
+    
+    # Log the full error for debugging (server-side only)
+    logging.error(f"Unhandled exception: {type(exc).__name__}: {str(exc)}")
+    
+    # Return generic error message to client
     return {
-        "error": str(exc),
-        "type": type(exc).__name__,
-        "traceback": traceback.format_exc(),  # Vulnerable: Exposes stack trace
-        "request_url": str(request.url),
-        "warning": "This error information should not be exposed in production!"
+        "error": "An internal server error occurred",
+        "type": "InternalServerError",
+        "message": "Please try again later or contact support if the problem persists"
     }
 
 
