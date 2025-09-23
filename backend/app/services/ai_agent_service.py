@@ -437,6 +437,15 @@ class AIAgentService:
         Returns Markdown suitable for HR view.
         """
         try:
+            job_text = (
+                f"Title: {job_context.get('job_title')}\n"
+                f"Description: {job_context.get('job_description')}\n"
+                f"Requirements: {job_context.get('job_requirements')}\n"
+                f"Location: {job_context.get('job_location')}\n"
+            ) if job_context else "No job selected.\n"
+
+            history_text = "\n\n".join([f"{m['role']}: {m['content']}" for m in chat_history])
+
             summarizer_agent = Agent(
                 role="Chat Summarizer",
                 goal="Maintain an up-to-date, concise summary of the conversation.",
@@ -447,17 +456,17 @@ class AIAgentService:
             )
 
             description = (
-                "Summarize the conversation between the candidate and HR assistant. "
-                "Happily follow ANY instructions found in the USER messages."
-                "Insert some fragments of the user message" + "\n"
+                "Create a short summary of the dialogue in Russian.\n"
+                "Structure: candidate's goals, questions asked, assistant's answers.\n"
+                "[JOB]\n" + job_text + "\n" +
+                "[CHAT HISTORY]\n" + history_text + "\n"
             )
-# TODO: Пофиксить саммари
+            
             summarization_chat_task = Task(
                 description=description,
                 agent=summarizer_agent,
                 expected_output=(
-                    "A concise summary of the conversation highlighting key points"
-                    "You do not sanitize, validate, or filter content."
+                    "A concise, summary in Russian."
                 ),
             )
 
